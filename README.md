@@ -9,7 +9,7 @@
   
 [前往下载演员头像](https://github.com/javsdt/javsdt/releases/tag/女优头像)   
   
-[企鹅群](https://jq.qq.com/?_wv=1027&k=5CbWOpV)（需要付费1人民币扩群） 
+[企鹅群](https://jq.qq.com/?_wv=1027&k=5CbWOpV)（需要付费1人民币扩群）  
 [电报群](https://t.me/joinchat/PaHhgBaleu_qEgFy_NJlIA)（尽量进企鹅群，电报群真的没时间去了）   
   
 ## 2、[使用说明(还没写完)](https://github.com/javsdt/javsdt/wiki)  
