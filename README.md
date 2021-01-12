@@ -1,11 +1,11 @@
 # jav-standard-tool 简称javsdt
 # 作者为生活所迫，已经跑路...
-简介：收集jav元数据，并规范本地文件（夹）的格式，收集女优头像，为emby、kodi、jellyfin、极影派等影片管理软件铺路。  
+简介：收集影视元数据，并规范本地文件（夹）的格式，收集演员头像，为emby、kodi、jellyfin、极影派等影片管理软件铺路。  
 
   
 ## 1、【一般用户】下载及群链接：  
-目前2020年5月30日更新的1.1.1版本  推荐使用环境win10 64位  
-[从蓝奏云下载](https://junerain.lanzous.com/id6ilbe) 或者 [从github下载](https://github.com/javsdt/javsdt/releases/tag/V1.1.1)
+目前2021年1月12日更新的1.1.3版本  推荐使用环境win10 64位  
+[从蓝奏云下载](https://junerain.lanzous.com/iXDHwkbia9i) 或者 [从github下载](https://github.com/javsdt/javsdt/releases/tag/V1.1.3)
   
 [前往下载演员头像](https://github.com/javsdt/javsdt/releases/tag/女优头像)   
   
@@ -17,11 +17,12 @@
 
 ## 3、【其他开发者】运行环境：  
   python3.7.6 发行版是pyinstaller打包的exe  
-    pip install requests  
+    pip install requests==2.20.0（安装2.25.1报错ProxyError无法使用http代理）  
     pip install Pillow  
     pip install baidu-aip  
     pip install pysocks  
     pip install [cloudscraper](https://github.com/VeNoMouS/cloudscraper)  
+    pip install xlrd==1.2.0（安装2.2.1无法读取xlsx）  
    几个jav的py都是独立执行的，加了很多很多注释，希望能理解其中踩过的坑。  
    
 ## 4、工作流程：  
@@ -35,9 +36,10 @@
     （8）移动文件夹，完成归类。  
   
 ## 5、目标效果：  
-![image](https://github.com/javsdt/images/blob/master/jav/javsdt/readme/%E7%9B%AE%E6%A0%87%E6%95%88%E6%9E%9C1.png?raw=false)  
-![image](https://github.com/javsdt/images/blob/master/jav/javsdt/readme/%E7%9B%AE%E6%A0%87%E6%95%88%E6%9E%9C2.png?raw=false)  
-![image](https://github.com/javsdt/images/blob/master/jav/javsdt/readme/%E7%9B%AE%E6%A0%87%E6%95%88%E6%9E%9C3.jpg?raw=false)  
+效果图不放了
+=![image](https://github.com/javsdt/images/blob/master/jav/javsdt/readme/%E7%9B%AE%E6%A0%87%E6%95%88%E6%9E%9C1.png?raw=false)  
+=![image](https://github.com/javsdt/images/blob/master/jav/javsdt/readme/%E7%9B%AE%E6%A0%87%E6%95%88%E6%9E%9C2.png?raw=false)  
+=![image](https://github.com/javsdt/images/blob/master/jav/javsdt/readme/%E7%9B%AE%E6%A0%87%E6%95%88%E6%9E%9C3.jpg?raw=false)  
   
 ## 6、ini中的用户设置：  
 ![image](https://github.com/javsdt/images/blob/master/jav/javsdt/readme/ini%E8%AE%BE%E7%BD%AE.PNG?raw=false)  
