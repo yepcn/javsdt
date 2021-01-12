@@ -1,21 +1,21 @@
 # -*- coding:utf-8 -*-
+import requests
 from os import system
 from time import sleep, time
 from hashlib import md5
 from json import loads
-from requests import get
 # from traceback import format_exc
 
 
 # 功能：调用百度翻译API接口，翻译日语简介
-# 参数：百度翻译api账户api_id, key，需要翻译的内容，目标语言
-# 返回：中文简介str
+# 参数：百度翻译api账户api_id, api_key，需要翻译的内容word，目标语言to_lang
+# 返回：中文简介string
 # 辅助：os.system, hashlib.md5，time.time，requests.get，json.loads
-def tran_plot(api_id, key, word, to_lang):
+def translate(api_id, api_key, word, to_lang):
     for retry in range(10):
         # 把账户、翻译的内容、时间 混合md5加密，传给百度验证
         salt = str(time())[:10]
-        final_sign = api_id + word + salt + key
+        final_sign = api_id + word + salt + api_key
         final_sign = md5(final_sign.encode("utf-8")).hexdigest()
         # 表单paramas
         paramas = {
@@ -27,7 +27,7 @@ def tran_plot(api_id, key, word, to_lang):
             'sign': '%s' % final_sign
         }
         try:
-            response = get('http://api.fanyi.baidu.com/api/trans/vip/translate', params=paramas, timeout=(6, 7))
+            response = requests.get('http://api.fanyi.baidu.com/api/trans/vip/translate', params=paramas, timeout=(6, 7))
         except:
             print('    >百度翻译拉闸了...重新翻译...')
             continue
