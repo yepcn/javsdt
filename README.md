@@ -5,7 +5,7 @@
   
 ## 1、【一般用户】下载及群链接：  
 目前2021年1月12日更新的1.1.3版本  推荐使用环境win10 64位  
-[从蓝奏云下载](https://junerain.lanzous.com/iXDHwkbia9i) 或者 [从github下载](https://github.com/javsdt/javsdt/releases/tag/V1.1.3)
+[从蓝奏云下载](https://junerain.lanzous.com/isu4Okcuasf) 或者 [从github下载](https://github.com/javsdt/javsdt/releases/tag/V1.1.3)
   
 [前往下载演员头像](https://github.com/javsdt/javsdt/releases/tag/女优头像)   
   
