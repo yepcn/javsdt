@@ -390,7 +390,8 @@ while input_start_key == '':
                     plot = ''
                 # print(plot)
                 #######################################################################
-                dict_data['视频'] = dict_data['原文件名'] = jav.name  # dict_data['视频']，先定义为原文件名，即将发生变化。
+                dict_data['视频'] = dict_data['原文件名'] = jav.name_no_ext  # dict_data['视频']，先定义为原文件名，即将发生变化。
+                dict_data['原文件夹名'] = jav.folder
                 # 是CD1还是CDn？
                 num_all_episodes = dict_car_pref[jav.car]  # 该车牌总共多少集
                 if num_all_episodes > 1:
