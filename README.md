@@ -4,8 +4,8 @@
 
   
 ## 1、【一般用户】下载及群链接：  
-目前2021年1月12日更新的1.1.3版本  推荐使用环境win10 64位  
-[从蓝奏云下载](https://junerain.lanzous.com/isu4Okcuasf) 或者 [从github下载](https://github.com/javsdt/javsdt/releases/tag/V1.1.3)
+目前2021年1月25日更新的1.1.4版本  推荐使用环境win10 64位  
+[从蓝奏云下载](https://junerain.lanzous.com/iDFM4ku7fob) 或者 [从github下载](https://github.com/javsdt/javsdt/releases/tag/V1.1.4)
   
 [前往下载演员头像](https://github.com/javsdt/javsdt/releases/tag/女优头像)   
   
@@ -21,7 +21,7 @@
     pip install Pillow  
     pip install baidu-aip  
     pip install pysocks  
-    pip install [cloudscraper](https://github.com/VeNoMouS/cloudscraper)  
+    pip install [cloudscraper](https://github.com/VeNoMouS/cloudscraper)（目前版本暂时不需要）  
     pip install xlrd==1.2.0（安装2.2.1无法读取xlsx）  
    几个jav的py都是独立执行的，加了很多很多注释，希望能理解其中踩过的坑。  
    
