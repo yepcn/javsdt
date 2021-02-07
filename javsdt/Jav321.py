@@ -265,8 +265,9 @@ while input_start_key == '':
                 # 正则匹配 影片信息 开始！
                 # 有大部分信息的html_web
                 html_web = re.search(r'(h3>.+?)async', html_web).group(1)
+                print(html_web)
                 # 车牌
-                dict_data['车牌'] = car = re.search(r'番.</b>: (.+?)<br>', html_web).group(1).upper()
+                dict_data['车牌'] = car = re.search(r'番.?</b>: (.+?)<br>', html_web).group(1).upper()
                 dict_data['车牌前缀'] = car.split('-')[0]
                 # jav321上素人的title开头不是车牌
                 title = car + ' ' + title_only
