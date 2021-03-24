@@ -1,0 +1,17 @@
+/.git/
+/.idea/
+
+/javsdt/.idea/
+/javsdt/__pycache__/
+/javsdt/build/
+/javsdt/dist/
+/javsdt/venv/
+
+*.spec
+
+*.ini
+
+/javsdt/*.ico
+/javsdt/*.png
+
+*.txt

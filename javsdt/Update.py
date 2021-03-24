@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 import requests, re, os
 
-now_version = '1.1.3'
+now_version = '1.1.4'
 print('当前版本为：', now_version)
 print('正在检查更新...https://github.com/junerain123/javsdt/blob/master/%E6%A3%80%E6%9F%A5%E6%9B%B4%E6%96%B0.json')
 upd_url = 'https://github.com/junerain123/javsdt/blob/master/%E6%A3%80%E6%9F%A5%E6%9B%B4%E6%96%B0.json'

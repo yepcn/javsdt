@@ -265,7 +265,7 @@ while input_start_key == '':
                 # 正则匹配 影片信息 开始！
                 # 有大部分信息的html_web
                 html_web = re.search(r'(h3>.+?)async', html_web).group(1)
-                print(html_web)
+                # print(html_web)
                 # 车牌
                 dict_data['车牌'] = car = re.search(r'番.?</b>: (.+?)<br>', html_web).group(1).upper()
                 dict_data['车牌前缀'] = car.split('-')[0]
@@ -300,7 +300,7 @@ while input_start_key == '':
                 else:
                     url_poster = ''
                 # 发行日期
-                premieredg = re.search(r'日期</b>: (\d\d\d\d-\d\d-\d\d)<br>', html_web)
+                premieredg = re.search(r'配信開始日</b>: (\d\d\d\d-\d\d-\d\d)<br>', html_web)
                 if str(premieredg) != 'None':
                     dict_data['发行年月日'] = time_premiered = premieredg.group(1)
                     dict_data['发行年份'] = time_premiered[0:4]
@@ -312,29 +312,25 @@ while input_start_key == '':
                     dict_data['月'] = '01'
                     dict_data['日'] = '01'
                 # 片长 <td><span class="text">150</span> 分钟</td>
-                runtimeg = re.search(r'播放..</b>: (\d+)', html_web)
+                runtimeg = re.search(r'収録時間</b>: (\d+)', html_web)
                 if str(runtimeg) != 'None':
                     dict_data['片长'] = runtimeg.group(1)
                 else:
                     dict_data['片长'] = '0'
                 # 片商</b>: <a href="/company/%E83%A0%28PRESTIGE+PREMIUM%29/1">プレステージプレミアム(PRESTIGE PREMIUM)</a>
-                studiog = re.search(r'片商</b>: <a href="/company.+?">(.+?)</a>', html_web)
+                studiog = re.search(r'メーカー</b>: <a href="/company.+?">(.+?)</a>', html_web)
                 if str(studiog) != 'None':
                     dict_data['片商'] = studio = replace_xml_win(studiog.group(1))
                 else:
                     dict_data['片商'] = '素人片商'
                     studio = ''
                 # 演员们 和 # 第一个演员   演员</b>: 花音さん 21歳 床屋さん(家族経営) &nbsp
-                actorg = re.search(r'small>(.+?)</small>', html_web)
+                actorg = re.search(r'出演者</b>: (.+?) ', html_web)
                 if str(actorg) != 'None':
-                    actor_only = actorg.group(1)
-                    list_actor = actor_only.replace('/', ' ').split(
-                        ' ')  # <small>luxu-071 松波優 29歳 システムエンジニア</small>
+                    actor_only = actorg.group(1)    # dcv-141 '紗綾さん/27歳/保育士'
+                    list_actor = actor_only.replace('/', ' ').split(' ')  # ['紗綾さん', '27歳', '保育士']
                     list_actor = [i for i in list_actor if i]
-                    if len(list_actor) > 3:
-                        dict_data['首个演员'] = list_actor[1] + ' ' + list_actor[2] + ' ' + list_actor[3]
-                    elif len(list_actor) > 1:
-                        del list_actor[0]
+                    if list_actor:
                         dict_data['首个演员'] = ' '.join(list_actor)
                     else:
                         dict_data['首个演员'] = '素人'
@@ -350,7 +346,7 @@ while input_start_key == '':
                     genres.append('无码流出')
                 # print(genres)
                 # 评分
-                scoreg = re.search(r'评分</b>: (\d\.\d)<br>', html_web)
+                scoreg = re.search(r'平均評価</b>: (\d\.\d)<br>', html_web)
                 if str(scoreg) != 'None':
                     float_score = float(scoreg.group(1))
                     float_score = (float_score - 2) * 10 / 3
@@ -359,7 +355,7 @@ while input_start_key == '':
                     else:
                         score = '0'
                 else:
-                    scoreg = re.search(r'"img/(\d\d)\.gif', html_web)
+                    scoreg = re.search(r'img/(\d\d)\.gif', html_web)
                     if str(scoreg) != 'None':
                         float_score = float(scoreg.group(1)) / 10
                         float_score = (float_score - 2) * 10 / 3
