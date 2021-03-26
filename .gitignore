@@ -1,6 +1,7 @@
 /.git/
 /.idea/
 /测试/
+/venv/
 
 /javsdt/.idea/
 **/__pycache__/
