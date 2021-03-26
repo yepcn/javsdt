@@ -1,5 +1,6 @@
 /.git/
 /.idea/
+/测试/
 
 /javsdt/.idea/
 **/__pycache__/
@@ -14,5 +15,5 @@
 /javsdt/*.ico
 /javsdt/*.png
 
-*.txt
+/javsdt/*.txt
 !/javsdt/【素人车牌】.txt
