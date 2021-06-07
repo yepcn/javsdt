@@ -1,69 +1,70 @@
 @echo off
+chcp 65001
 ECHO. ===============================================================================
 echo. =                                                                             =
-echo. =         [1]´ò°ü ËØÈËJav321  [2]´ò°ü ´´½¨ini    [3] ´ò°ü javdbFc2            =
+echo. =         [1]æ‰“åŒ… ç´ äººJav321  [2]æ‰“åŒ… åˆ›å»ºini    [3] æ‰“åŒ… javdbFc2            =
 echo. =                                                                             =
-echo. =         [4]´ò°ü JavbusÎÞÂë  [5]´ò°ü JavbusÓÐÂë [6] ´ò°ü JavlibÓÐÂë          = 
+echo. =         [4]æ‰“åŒ… Javbusæ— ç   [5]æ‰“åŒ… Javbusæœ‰ç  [6] æ‰“åŒ… Javlibæœ‰ç           = 
 echo. =                                                                             =
 ECHO. ===============================================================================
 echo.
 :choice
 set choice=
-set /p choice= ÇëÊäÈëÑ¡Ïî:
+set /p choice= è¯·è¾“å…¥é€‰é¡¹:
 if /i "%choice%"=="1" goto jav321
 if /i "%choice%"=="2" goto Fc2
 if /i "%choice%"=="3" goto Createini
 if /i "%choice%"=="4" goto BusW
 if /i "%choice%"=="5" goto BusY
 if /i "%choice%"=="6" goto lib
-echo. ÊäÈëÎÞÐ§
+echo. è¾“å…¥æ— æ•ˆ
 echo.
 goto choice
 
 
 
 :jav321
-echo. ¿ªÊ¼´ò°ü
+echo. å¼€å§‹æ‰“åŒ…
 pyinstller -F Jav321.py 
 cd %~dp0\dist
-move /y Jav321.exe ¡¾ËØÈË¡¿jav321Ðë·­Ç½.exe
+move /y Jav321.exe ã€ç´ äººã€‘jav321é¡»ç¿»å¢™.exe
 goto end
 
 :Fc2
-echo. ¿ªÊ¼´ò°ü
+echo. å¼€å§‹æ‰“åŒ…
 pyinstaller -F JavdbFc2.py
 cd dist
-move /y JavdbFc2.exe ¡¾FC2¡¿javdb.exe
+move /y JavdbFc2.exe ã€FC2ã€‘javdb.exe
 goto end
 
 :Createini
-echo. ¿ªÊ¼´ò°ü
+echo. å¼€å§‹æ‰“åŒ…
 pyinstaller -F CrateIni.py
 cd dist
-move /y CrateIni.exe ÖØÐÂ´´½¨ini.exe
+move /y CrateIni.exe é‡æ–°åˆ›å»ºini.exe
 goto end
 
 :BusW
-echo. ¿ªÊ¼´ò°ü
+echo. å¼€å§‹æ‰“åŒ…
 pyinstaller -F -i favicon.ico JavBusWuma.py
 cd dist
-move /y JavBusWuma.exe ¡¾ÎÞÂë¡¿Javbus.exe
+move /y JavBusWuma.exe ã€æ— ç ã€‘Javbus.exe
 goto end
 
 :BusY
-echo. ¿ªÊ¼´ò°ü
+echo. å¼€å§‹æ‰“åŒ…
 pyinstaller -F -i favicon.ico JavBusYouma.py
 cd dist
-move /y JavBusYouma.exe ¡¾ÓÐÂë¡¿Javbus.exe
+move /y JavBusYouma.exe ã€æœ‰ç ã€‘Javbus.exe
 goto end
 
 :lib
-echo. ¿ªÊ¼´ò°ü
+echo. å¼€å§‹æ‰“åŒ…
 pyinstaller -F javlibrary.py
 cd dist
-move /y javlibrary.exe ¡¾ÓÐÂë¡¿javlibrary.exe
+move /y javlibrary.exe ã€æœ‰ç ã€‘javlibrary.exe
 goto end
 
 :end
-echo. ½áÊø
+echo. ç»“æŸ
 pause 1>nul 2>nul
