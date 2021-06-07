@@ -1,12 +1,11 @@
 # -*- coding:utf-8 -*-
-import os
-import re
+import os, re
+
 from shutil import copyfile
 from traceback import format_exc
-
-from Class.JavFile import JavFile
 ########################################################################################################################
 from Class.Settings import Settings
+from Class.JavFile import JavFile
 from Functions.Baidu import translate
 from Functions.Car import find_car_suren, list_suren_car
 from Functions.Picture import add_watermark_divulge, crop_poster_default

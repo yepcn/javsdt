@@ -358,7 +358,7 @@ while input_start_key == '':
                 else:
                     dict_data['标题'] = title_only
                 # 特点
-                genres = re.findall(r'genre"><a href=".+?">(.+?)</a></span>', html_web)
+                genres = re.findall(r'<a href=".+?">(.+?)</a></label>', html_web)
                 if bool_subtitle:  # 有“中字“，加上特征”中文字幕”
                     genres.append('中文字幕')
                 if bool_divulge:  # 是流出无码片，加上特征'无码流出'
