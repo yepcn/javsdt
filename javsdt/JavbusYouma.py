@@ -358,7 +358,7 @@ while input_start_key == '':
                 else:
                     dict_data['标题'] = title_only
                 # 特点
-                genres = re.findall(r'genre"><a href=".+?">(.+?)</a></span>', html_web)
+                genres = re.findall(r'<a href=".+?">(.+?)</a></label>', html_web)
                 if bool_subtitle:  # 有“中字“，加上特征”中文字幕”
                     genres.append('中文字幕')
                 if bool_divulge:  # 是流出无码片，加上特征'无码流出'
@@ -394,7 +394,7 @@ while input_start_key == '':
                 else:
                     plot = ''
                 #######################################################################
-                dict_data['视频'] = dict_data['原文件名'] = jav.name_no_ext    # dict_data['视频']，先定义为原文件名，即将发生变化。
+                dict_data['视频'] = dict_data['原文件名'] = jav.name_no_ext  # dict_data['视频']，先定义为原文件名，即将发生变化。
                 dict_data['原文件夹名'] = jav.folder
                 # 是CD1还是CDn？
                 num_all_episodes = dict_car_pref[jav.car]  # 该车牌总共多少集
