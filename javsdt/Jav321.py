@@ -219,7 +219,7 @@ while input_start_key == '':
             # 获取nfo信息的jav321网页
             try:
                 # 用户指定了网址，则直接得到jav所在网址
-                if '图书馆' in jav.name:
+                if '三二一' in jav.name:
                     url_appointg = re.search(r'三二一(.+?)\.', jav.name)
                     if str(url_appointg) != 'None':
                         url_on_web = url_321 + 'video/' + url_appointg.group(1)
