@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-import re, os, requests
+import re, os, requests, cloudscraper
 # from traceback import format_exc
 
 # 功能：请求各大jav网站和arzon的网页
@@ -10,12 +10,13 @@ import re, os, requests
 #################################################### javlibrary ########################################################
 # 搜索javlibrary，或请求javlibrary上jav所在网页，返回html
 def get_library_html(url, proxy):
+    scraper = cloudscraper.create_scraper()
     for retry in range(10):
         try:
             if proxy:
-                rqs = requests.get(url, proxies=proxy, timeout=(6, 7))
+                rqs = scraper.get(url, proxies=proxy, timeout=(6, 7))
             else:
-                rqs = requests.get(url, timeout=(6, 7))
+                rqs = scraper.get(url, timeout=(6, 7))
         except requests.exceptions.ProxyError:
             # print(format_exc())
             print('    >通过局部代理失败，重新尝试...')

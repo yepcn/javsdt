@@ -49,7 +49,8 @@ sep = os.sep
 check_actors(settings.bool_sculpture)
 
 # 局部代理：哪些站点需要代理。
-proxy_library, proxy_bus, proxy_321, proxy_db, proxy_arzon, proxy_dmm = settings.get_proxy()
+proxy_library, proxy_bus, proxy_321, proxy_db, proxy_book, proxy_arzon, proxy_dmm = settings.get_proxy()
+
 # jav321网址 搜索网址 https://www.jav321.com/search https://www.jav321.com/
 url_search_321, url_321 = settings.get_url_321()
 

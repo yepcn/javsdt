@@ -47,7 +47,7 @@ sep = os.sep
 check_actors(settings.bool_sculpture)
 
 # 局部代理：哪些站点需要代理。
-proxy_library, proxy_bus, proxy_321, proxy_db, proxy_arzon, proxy_dmm = settings.get_proxy()
+proxy_library, proxy_bus, proxy_321, proxy_db, proxy_book, proxy_arzon, proxy_dmm = settings.get_proxy()
 
 # arzon通行证：如果需要在nfo中写入日语简介，需要先获得合法的arzon网站的cookie，用于通过成人验证。
 cookie_arzon = steal_arzon_cookies(proxy_arzon) if settings.bool_plot and settings.bool_nfo else {}
