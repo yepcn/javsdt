@@ -312,7 +312,7 @@ while input_start_key == '':
                     dict_data['系列'] = '有码系列'
                     series = ''
                 # 演员们 和 # 第一个演员
-                actors = re.findall(r'actors/.+?">(.+?)/.+_?female">', html_web)
+                actors = re.findall(r'actors/.+?">(.+?)</a><strong class="symbol female">', html_web)
                 if actors:
                     if len(actors) > 7:
                         dict_data['全部演员'] = ' '.join(actors[:7])
