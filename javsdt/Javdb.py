@@ -18,7 +18,7 @@ from Functions.Genre import better_dict_genre
 # ################################################## 不同 ##########################################################
 from Functions.Process import judge_exist_divulge
 from Functions.Status import check_actors
-from Functions.Car import find_car_bus, list_suren_car
+from Functions.Car import find_car_db, list_suren_car
 from Functions.Standard import collect_sculpture
 from Functions.Baidu import translate
 from Functions.Picture import add_watermark_divulge, crop_poster_youma
@@ -36,7 +36,7 @@ try:
     settings = Settings('有码')
 except:
     settings = None
-    print(format_exc())
+    # print(format_exc())
     print('\n无法读取ini文件，请修改它为正确格式，或者打开“【ini】重新创建ini.exe”创建全新的ini！')
     os.system('pause')
 print('\n读取ini文件成功!\n')
@@ -118,7 +118,7 @@ while input_start_key == '':
     # 用户：选择需要整理的文件夹
     print('请选择要整理的文件夹：', end='')
     root_choose = choose_directory()
-    print(root_choose)
+    # print(root_choose)
     # 日志：在txt中记录一下用户的这次操作，在某个时间选择了某个文件夹
     record_start(root_choose)
     # 归类：用户自定义的归类根目录，如果不需要归类则为空
@@ -148,7 +148,6 @@ while input_start_key == '':
         # 判断文件是不是字幕文件，放入dict_subtitle_files中
         for file_raw in files:
             file_temp = file_raw.upper()
-            print(file_temp)
             if file_temp.endswith(('.SRT', '.VTT', '.ASS', '.SSA', '.SUB', '.SMI',)):
                 # 当前模式不处理FC2
                 if 'FC2' in file_temp:
@@ -157,7 +156,7 @@ while input_start_key == '':
                 for word in list_surplus_words_in_filename:
                     file_temp = file_temp.replace(word, '')
                 # 得到字幕文件名中的车牌
-                subtitle_car = find_car_bus(file_temp, list_suren_cars)
+                subtitle_car = find_car_db(file_temp)
                 # 将该字幕文件和其中的车牌对应到dict_subtitle_files中
                 if subtitle_car:
                     dict_subtitle_files[file_raw] = subtitle_car
@@ -174,7 +173,7 @@ while input_start_key == '':
                 for word in list_surplus_words_in_filename:
                     file_temp = file_temp.replace(word, '')
                 # 得到视频中的车牌
-                car = find_car_bus(file_temp, list_suren_cars)
+                car = find_car_db(file_temp)
                 if car:
                     try:
                         dict_car_pref[car] += 1  # 已经有这个车牌了，加一集cd
@@ -243,7 +242,7 @@ while input_start_key == '':
                     search_result = get_db_search_json(url_search_web, proxy_db)
                     num_list = [i['number'] for i in search_result]
                     try:
-                        uid = search_result[num_list.index(car)]['uid']
+                        uid = search_result[num_list.index(jav.car)]['uid']
                         url_on_web = url_db + '/v/' + uid + '?locale=zh'
                     except ValueError:
                         print('搜索结果中未找到目标影片')
@@ -259,12 +258,12 @@ while input_start_key == '':
                 html_web = re.search(r'<div class="video-meta-panel">([\s\S]*?)want_to_watch" data-remote="true"', html_web, re.DOTALL).group(1)
                 # print(html_web)
                 # 标题
-                title = search_result[num_list.index(car)]['title'].replace(' 中文字幕 ', '')
+                title = search_result[num_list.index(jav.car)]['title'].replace(' 中文字幕 ', '')
                 # 去除xml文档和windows路径不允许的特殊字符 &<>  \/:*?"<>|
                 title = replace_xml_win(title)
                 print('    >影片标题：', title)
                 # 车牌号
-                dict_data['车牌'] = car
+                dict_data['车牌'] = car = jav.car
                 # 给用户重命名用的标题是“短标题”，nfo中是“完整标题”，但用户在ini中只用写“标题”
                 title_only = title
 
@@ -343,7 +342,7 @@ while input_start_key == '':
                     record_fail('    >第' + str(num_fail) + '个失败！发现新的特征需要添加至【特征对照表】：' + str(error) + '\n')
                     continue
                 # 评分
-                scoreg = re.search(r'</span>&nbsp;(\d\.\d\d)分', html_web)
+                scoreg = re.search(r'</span>&nbsp;(\d\.*\d*\d)分', html_web)
                 if str(scoreg) != 'None':
                     float_score = float(scoreg.group(1))
                     float_score = (float_score - 2) * 10 / 3
