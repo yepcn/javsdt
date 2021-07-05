@@ -19,13 +19,14 @@ try:
     api_key = config_settings.get("emby/jellyfin", "api id")
     bool_replace = True if config_settings.get("emby/jellyfin", "是否覆盖以前上传的头像？") == '是' else False
 except:
+    url_emby = api_key = ''
+    bool_replace = False
     print(format_exc())
     print('无法读取ini文件，请修改它为正确格式，或者打开“【ini】重新创建ini.exe”创建全新的ini！')
     os.system('pause')
 print('读取ini文件成功!\n')
 # 修正用户输入的emby网址，无论是不是带“/”
-if not url_emby.endswith('/'):
-    url_emby += '/'
+url_emby = url_emby.strip('/')
 # 成功的个数
 num_suc = 0
 num_fail = 0
@@ -35,7 +36,7 @@ try:
     print('正在获取取emby中Persons清单...')
     # curl -X GET "http://localhost:8096/emby/Persons?api_key=3291434710e342089565ad05b6b2f499" -H "accept: application/json"
     # 得到所有“人员” emby api没有细分“演员”还是“导演”“编剧”等等 下面得到的是所有“有关人员”
-    url_emby_persons = url_emby + 'emby/Persons?api_key=' + api_key  # &PersonTypes=Actor
+    url_emby_persons = f'{url_emby}/emby/Persons?api_key={api_key}'  # &PersonTypes=Actor
     try:
         rqs_emby = requests.get(url=url_emby_persons)
     except requests.exceptions.ConnectionError:
@@ -53,12 +54,13 @@ try:
     try:
         list_persons = loads(rqs_emby.text)['Items']
     except:
+        list_persons = []
         print(rqs_emby.text)
         print('发生错误！emby返回内容如上：')
         print('请截图并联系作者！')
         os.system('pause')
     num_persons = len(list_persons)
-    print('当前有' + str(num_persons) + '个Person！\n')
+    print(f'当前有{num_persons}个Person！\n')
     # os.system('pause')
     # 用户emby中的persons，在“演员头像”文件夹中，已有头像的，记录下来
     f_txt = open("已收录的人员清单.txt", 'w', encoding="utf-8")
@@ -68,23 +70,23 @@ try:
     for dic_each_actor in list_persons:
         actor_name = dic_each_actor['Name']
         # 头像jpg/png在“演员头像”中的路径
-        actor_pic_path = '演员头像' + sep + actor_name[0] + sep + actor_name
-        if exists(actor_pic_path + '.jpg'):
-            actor_pic_path = actor_pic_path + '.jpg'
+        actor_pic_path = f'演员头像{sep}{actor_name[0]}{sep}{actor_name}'
+        if exists(f'{actor_pic_path}.jpg'):
+            actor_pic_path = f'{actor_pic_path}.jpg'
             header = {"Content-Type": 'image/jpeg', }
-        elif exists(actor_pic_path + '.png'):
-            actor_pic_path = actor_pic_path + '.png'
+        elif exists(f'{actor_pic_path}.png'):
+            actor_pic_path = f'{actor_pic_path}.png'
             header = {"Content-Type": 'image/png', }
         else:
             print('>>暂无头像：', actor_name)
             f_txt = open("未收录的人员清单.txt", 'a', encoding="utf-8")
-            f_txt.write(actor_name + '\n')
+            f_txt.write(f'{actor_name}\n')
             f_txt.close()
             num_fail += 1
             continue
         # emby有某个演员，“演员头像”文件夹也有这个演员的头像，记录一下
         f_txt = open("已收录的人员清单.txt", 'a', encoding="utf-8")
-        f_txt.write(actor_name + '\n')
+        f_txt.write(f'{actor_name}\n')
         f_txt.close()
         # emby有某个演员，已经有他的头像，不再进行下面“上传头像”的操作
         if dic_each_actor['ImageTags']:  # emby已经收录头像
@@ -94,7 +96,7 @@ try:
         f_pic = open(actor_pic_path, 'rb')  # 二进制方式打开图文件
         b6_pic = b64encode(f_pic.read())  # 读取文件内容，转换为base64编码
         f_pic.close()
-        url_post_img = url_emby + 'emby/Items/' + dic_each_actor['Id'] + '/Images/Primary?api_key=' + api_key
+        url_post_img = f'{url_emby}/emby/Items/{dic_each_actor["Id"]}/Images/Primary?api_key={api_key}'
         requests.post(url=url_post_img, data=b6_pic, headers=header)
         print('>>设置成功：', actor_name)
         num_suc += 1

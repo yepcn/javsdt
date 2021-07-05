@@ -22,39 +22,14 @@ def check_actors(bool_sculpture):
                 system('pause')
 
 
-# 功能：检查 归类根目录 是否存在，是不是和视频在同一个磁盘……
-# 参数：用户自定义的归类根目录，用户选择整理的文件夹路径
-# 返回：归类根目录路径
-# 辅助：os.sep，os.system
-def check_classify_root(root_custom, root_choose):
-    # 用户使用默认的“所选文件夹”
-    if root_custom == '所选文件夹':
-        return root_choose + sep + '归类完成'
-    # 归类根目录 是 用户输入的路径c:\a，继续核实合法性
-    else:
-        root_custom = root_custom.rstrip(sep)
-        # 用户输入的路径 不是 所选文件夹root_choose
-        if root_custom != root_choose:
-            if root_custom[:2] != root_choose[:2]:
-                print('归类的根目录“', root_custom, '”和所选文件夹不在同一磁盘无法归类！请修正！')
-                system('pause')
-            if not exists(root_custom):
-                print('归类的根目录“', root_custom, '”不存在！无法归类！请修正！')
-                system('pause')
-            return root_custom
-        # 用户输入的路径 就是 所选文件夹root_choose
-        else:
-            return root_choose + sep + '归类完成'
-
-
 # 功能：所选文件夹总共有多少个视频文件
-# 参数：用户选择整理的文件夹路径root_choose，视频类型后缀集合tuple_video_type
+# 参数：用户选择整理的文件夹路径dir_choose，视频类型后缀集合tuple_video_type
 # 返回：无
 # 辅助：os.walk
-def count_num_videos(root_choose, tuple_video_type):
+def count_num_videos(dir_choose, tuple_video_type):
     num_videos = 0
-    for root, dirs, files in walk(root_choose):
-        for file_raw in files:
+    for dir_current, list_sub_dirs, list_sub_files in walk(dir_choose):
+        for file_raw in list_sub_files:
             file_temp = file_raw.upper()
             if file_temp.endswith(tuple_video_type) and not file_temp.startswith('.'):
                 num_videos += 1
@@ -81,3 +56,16 @@ def judge_exist_extra_folders(list_folders):
         if folder != '.actors' and folder != 'extrafanart':
             return True
     return False
+
+
+# 功能：判定影片所在文件夹是否是独立文件夹，独立文件夹是指该文件夹仅用来存放该影片，而不是大杂烩文件夹
+# 参数：len_dict_car_pref 当前所处文件夹包含的车牌数量, sum_videos_include(no_current 已是-)当前文件夹中视频的数量，可能有视频不是jav,
+#      len_list_jav_struct当前所处文件夹包含的、需要整理的jav的结构体数量, list_sub_dirs当前所处文件夹包含的子文件夹们
+# 返回：True
+# 辅助：judge_exist_extra_folders
+def judge_separate_folder(len_dict_car_pref, sum_videos_include, len_list_jav_struct, list_sub_dirs):
+    # 当前文件夹下，车牌不止一个；还有其他非jav视频；有其他文件夹，除了演员头像文件夹“.actors”和额外剧照文件夹“extrafanart”；
+    if len_dict_car_pref > 1 or sum_videos_include > len_list_jav_struct or judge_exist_extra_folders(list_sub_dirs):
+        return False  # 不是独立的文件夹
+    else:
+        return True  # 这一层文件夹是这部jav的独立文件夹

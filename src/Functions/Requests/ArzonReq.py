@@ -7,6 +7,9 @@ from os import system
 # 功能：获取一个arzon_cookie
 # 参数：代理proxy
 # 返回：cookies
+from EnumStatus import StatusScrape
+
+
 def steal_arzon_cookies(proxy):
     print('\n正在尝试通过 https://www.arzon.jp 的成人验证...')
     for retry in range(10):
@@ -67,31 +70,31 @@ def get_arzon_html(url, cookies, proxy):
 # 返回：简介，执行完成状态码，cookies
 def find_plot_arzon(car, cookies, proxy):
     for retry in range(2):
-        url_search_arzon = 'https://www.arzon.jp/itemlist.html?t=&m=all&s=&q=' + car.replace('-', '')
+        url_search_arzon = f'https://www.arzon.jp/itemlist.html?t=&m=all&s=&q={car.replace("-", "")}'
         print('    >查找简介：', url_search_arzon)
         # 得到arzon的搜索结果页面
         html_search_arzon = get_arzon_html(url_search_arzon, cookies, proxy)
         # <dt><a href="https://www.arzon.jp/item_1376110.html" title="限界集落 ～村民"><img src=
-        list_search_results = re.findall(r'h2><a href="(/item.+?)" title=', html_search_arzon)  # 所有搜索结果链接
+        list_search_results = re.findall(r'h2><a href="/item(.+?)" title=', html_search_arzon)  # 所有搜索结果链接
         # 搜索结果为N个AV的界面
         if list_search_results:  # arzon有搜索结果
             for url_each_result in list_search_results:
-                url_on_arzon = 'https://www.arzon.jp' + url_each_result  # 第i+1个链接
-                print('    >获取简介：', url_on_arzon)
+                url_jav = f'https://www.arzon.jp/item{url_each_result}'  # 第i+1个链接
+                print('    >获取简介：', url_jav)
                 # 打开arzon上每一个搜索结果的页面
-                html_arzon = get_arzon_html(url_on_arzon, cookies, proxy)
-                # 在该url_on_arzon网页上查找简介
-                plotg = re.search(r'h2>作品紹介</h2>([\s\S]*?)</div>', html_arzon)
+                html_jav_arzon = get_arzon_html(url_jav, cookies, proxy)
+                # 在该url_jav网页上查找简介
+                plotg = re.search(r'h2>作品紹介</h2>([\s\S]*?)</div>', html_jav_arzon)
                 # 成功找到plot
                 if str(plotg) != 'None':
                     plot_br = plotg.group(1)
                     plot = ''
                     for line in plot_br.split('<br />'):
                         line = line.strip()
-                        plot += line
-                    return plot, 0, cookies
+                        plot = f'{plot}{line}'
+                    return StatusScrape.success, plot, cookies
             # 几个搜索结果查找完了，也没有找到简介
-            return '【arzon有该影片，但找不到简介】', 1, cookies
+            return StatusScrape.arzon_exist_but_no_plot, '【arzon有该影片，但找不到简介】', cookies
         # 没有搜索结果
         else:
             # arzon返回的页面实际是18岁验证
@@ -101,8 +104,8 @@ def find_plot_arzon(car, cookies, proxy):
                 continue
             # 不是成人验证，也没有简介
             else:
-                return '【影片下架，暂无简介】', 2, cookies
+                return StatusScrape.arzon_not_found, '【影片下架，暂无简介】', cookies
     print('>>请检查你的网络环境是否可以通过成人验证：https://www.arzon.jp/')
     system('pause')
-    return '', 3, cookies
+    return StatusScrape.interrupted, '', cookies
 

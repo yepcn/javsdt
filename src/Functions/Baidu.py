@@ -15,7 +15,7 @@ def translate(api_id, api_key, word, to_lang):
     for retry in range(10):
         # 把账户、翻译的内容、时间 混合md5加密，传给百度验证
         salt = str(time())[:10]
-        final_sign = api_id + word + salt + api_key
+        final_sign = f'{api_id}{word}{salt}{api_key}'
         final_sign = md5(final_sign.encode("utf-8")).hexdigest()
         # 表单paramas
         paramas = {
@@ -73,6 +73,6 @@ def translate(api_id, api_key, word, to_lang):
         else:  # 返回正确信息
             return json_reads['trans_result'][0]['dst']
     print('    >翻译简介失败...请截图联系作者...')
-    return '【百度翻译出错】' + word
+    return f'【百度翻译出错】{word}'
 
 

@@ -6,8 +6,8 @@ from time import strftime, localtime, time
 # 参数：错误信息
 # 返回：无
 # 辅助：os.strftime, os.localtime, os.time,
-def record_start(root_choose):
-    msg = '已选择文件夹：' + root_choose + '  ' + strftime('%Y-%m-%d %H:%M:%S', localtime(time())) + '\n'
+def record_start(dir_choose):
+    msg = f'已选择文件夹：{dir_choose}  {strftime("%Y-%m-%d %H:%M:%S", localtime(time()))}\n'
     txt = open('【可删除】失败记录.txt', 'a', encoding="utf-8")
     txt.write(msg)
     txt.close()
@@ -46,6 +46,6 @@ def record_warn(warn_msg):
 # 辅助：无
 def record_video_old(name_new, name_old):
     txt = open('【可删除】新旧文件名清单.txt', 'a', encoding="utf-8")
-    txt.write('<<<< ' + name_old + '\n')
-    txt.write('>>>> ' + name_new + '\n')
+    txt.write(f'<<<< {name_old}\n')
+    txt.write(f'>>>> {name_new}\n')
     txt.close()

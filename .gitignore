@@ -2,19 +2,22 @@
 /.idea/
 /测试/
 /venv/
+/bug/
+/有待更新.docx
+/用前必读.txt
 
-/javsdt/.idea/
+/src/.idea/
 **/__pycache__/
-/javsdt/build/
-/javsdt/dist/
-/javsdt/venv/
+/src/build/
+/src/dist/
+/src/venv/
 
 *.spec
 
 *.ini
 
-/javsdt/*.ico
-/javsdt/*.png
+/src/*.ico
+/src/*.png
 
-/javsdt/*.txt
-!/javsdt/【素人车牌】.txt
+/src/*.txt
+!/src/【素人车牌】.txt

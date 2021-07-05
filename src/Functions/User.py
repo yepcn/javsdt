@@ -15,8 +15,8 @@ def choose_directory():
     print('请选择要整理的文件夹：', end='')
     for i in range(2):
         try:
-            directory_root = Tk()
-            directory_root.withdraw()
+            tk_new = Tk()
+            tk_new.withdraw()
             path_work = filedialog.askdirectory()
             if path_work == '':
                 print('你没有选择目录! 请重新选：')
@@ -24,6 +24,7 @@ def choose_directory():
                 continue
             else:
                 # askdirectory 获得是 正斜杠 路径C:/，所以下面要把 / 换成 反斜杠\
+                print(path_work)
                 return path_work.replace('/', sep)
         except TclError:  # 来自@BlueSkyBot
             try:
@@ -35,6 +36,7 @@ def choose_directory():
                 sleep(2)
                 continue
             else:
+                print(path_work)
                 return path_work
     print('你可能不需要我了，请关闭我吧！')
     system('pause')

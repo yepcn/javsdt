@@ -16,7 +16,7 @@ def find_car_library(file, list_suren_car):
     # 特例 ID 车牌，在javlibrary上，20ID-020是ID-20020
     elif re.search(r'[^\d]?\d\dID[-_ ]*\d\d+', file):
         carg = re.search(r'[^\d]?(\d\d)ID[-_ ]*(\d\d+)', file)
-        car_pref = 'ID-' + carg.group(1)
+        car_pref = f'ID-{carg.group(1)}'
         car_suf = carg.group(2)
     # 一般车牌
     elif re.search(r'[A-Z][A-Z]+[-_ ]*\d\d+', file):
@@ -25,14 +25,14 @@ def find_car_library(file, list_suren_car):
         # 如果是素人或无码车牌，不处理
         if car_pref in list_suren_car or car_pref in ['HEYZO', 'PONDO', 'CARIB', 'OKYOHOT']:
             return ''
-        car_pref = car_pref + '-'
+        car_pref = f'{car_pref}-'
         car_suf = carg.group(2)
     else:
         return ''
     # 去掉太多的0，AVOP00127 => AVOP-127
     if len(car_suf) > 3:
-        car_suf = car_suf[:-3].lstrip('0') + car_suf[-3:]
-    return car_pref + car_suf
+        car_suf = f'{car_suf[:-3].lstrip("0")}{car_suf[-3:]}'
+    return f'{car_pref}{car_suf}'
 
 
 # 功能：发现原视频文件名中用于javbus的有码车牌
@@ -48,7 +48,7 @@ def find_car_bus(file, list_suren_car):
     # 以javbus上记录的20ID-020为标准
     elif re.search(r'[^\d]?\d\dID[-_ ]*\d\d+', file):
         carg = re.search(r'(\d\d)ID[-_ ]*(\d\d+)', file)
-        car_pref = carg.group(1) + 'ID-'
+        car_pref = f'{carg.group(1)}ID-'
         car_suf = carg.group(2)
     # 一般车牌
     elif re.search(r'[A-Z]+[-_ ]*\d\d+', file):
@@ -56,14 +56,14 @@ def find_car_bus(file, list_suren_car):
         car_pref = carg.group(1)
         if car_pref in list_suren_car or car_pref in ['HEYZO', 'PONDO', 'CARIB', 'OKYOHOT']:
             return ''
-        car_pref = car_pref + '-'
+        car_pref = f'{car_pref}-'
         car_suf = carg.group(2)
     else:
         return ''
     # 去掉太多的0，avop00127 => avop-127
     if len(car_suf) > 3:
-        car_suf = car_suf[:-3].lstrip('0') + car_suf[-3:]
-    return car_pref + car_suf
+        car_suf = f'{car_suf[:-3].lstrip("0")}{car_suf[-3:]}'
+    return f'{car_pref}{car_suf}'
 
 
 # 功能：发现原视频文件名中的无码车牌
@@ -78,7 +78,7 @@ def find_car_wuma(file, list_suren_car):
     # 123-12345
     elif re.search(r'\d+[-_ ]\d\d+', file):
         carg = re.search(r'(\d+)[-_ ](\d\d+)', file)
-        car_pref = carg.group(1) + '-'
+        car_pref = f'{carg.group(1)}-'
         car_suf = carg.group(2)
     # 只要是字母数字-_，全拿着
     elif re.search(r'[A-Z0-9]+[-_ ]?[A-Z0-9]+', file):
@@ -87,7 +87,7 @@ def find_car_wuma(file, list_suren_car):
         # print(car_pref)
         if car_pref in list_suren_car:
             return ''
-        car_pref = car_pref + carg.group(2)
+        car_pref = f'{car_pref}{carg.group(2)}'
         car_suf = carg.group(3)
     # 下面是处理和一般有码车牌差不多的无码车牌，拿到的往往是错误的，仅在1.0.4版本使用过，宁可不整理也不识别个错的
     # elif search(r'[A-Z]+[-_ ]?\d+', file):
@@ -95,14 +95,14 @@ def find_car_wuma(file, list_suren_car):
     #     car_pref = carg.group(1)
     #     if car_pref in list_suren_car:
     #         return ''
-    #     car_pref = car_pref + carg.group(2)
+    #     car_pref = f'{car_pref}{carg.group(2)}'
     #     car_suf = carg.group(3)
     else:
         return ''
     # 无码就不去0了，去了0和不去0，可能是不同结果
     # if len(car_suf) > 3:
-    #     car_suf = car_suf[:-3].lstrip('0') + car_suf[-3:]
-    return car_pref + car_suf
+    #     car_suf = f'{car_suf[:-3].lstrip("0")}{car_suf[-3:]}'
+    return f'{car_pref}{car_suf}'
 
 
 # 功能：发现素人车牌，直接从已记录的list_suren_car中来对比
@@ -119,8 +119,8 @@ def find_car_suren(file, list_suren_car):
         car_suf = carg.group(2)
         # 去掉太多的0，avop00127
         if len(car_suf) > 3:
-            car_suf = car_suf[:-3].lstrip('0') + car_suf[-3:]
-        return car_pref + '-' + car_suf
+            car_suf = f'{car_suf[:-3].lstrip("0")}{car_suf[-3:]}'
+        return f'{car_pref}-{car_suf}'
     else:
         return ''
 

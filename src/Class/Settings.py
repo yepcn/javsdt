@@ -1,13 +1,14 @@
 # -*- coding:utf-8 -*-
 from configparser import RawConfigParser
-from os import system
+from os import system, sep
 from os.path import exists
 from aip import AipBodyAnalysis
 
 
 # 设置
 class Settings(object):
-    def __init__(self, av_type):
+    def __init__(self, pattern):
+        self._pattern = pattern
         config_settings = RawConfigParser()
         config_settings.read('【点我设置整理规则】.ini', encoding='utf-8-sig')
         ####################################################### nfo ###################################################
@@ -44,7 +45,7 @@ class Settings(object):
         # 是否 针对“文件夹”归类jav，“否”即针对“文件”
         self.bool_classify_folder = True if config_settings.get("归类影片", "针对文件还是文件夹？") == '文件夹' else False
         # 自定义 路径 归类的jav放到哪
-        self._custom_root = config_settings.get("归类影片", "归类的根目录")
+        self._custom_classify_target_dir = config_settings.get("归类影片", "归类的根目录")
         # 自定义 jav按什么类别标准来归类
         self._custom_classify_basis = config_settings.get("归类影片", "归类的标准")
         ######################################################## 图片 ################################################
@@ -99,12 +100,10 @@ class Settings(object):
         # 自定义 是否流出 这个元素的表现形式
         self.custom_divulge_expression = config_settings.get("原影片文件的性质", "是否流出的表现形式")
         # 自定义 原影片性质 有码
-        self._av_type = config_settings.get("原影片文件的性质", av_type)
+        self._av_type = config_settings.get("原影片文件的性质", self._pattern)
         ##################################################### 信息来源 ##################################################
         # 是否 收集javlibrary下方用户超过10个人点赞的评论
         self.bool_review = True if config_settings.get("信息来源", "是否用javlibrary整理影片时收集网友的热评？") == '是' else False
-        # 是否 收集javlibrary下方用户超过10个人点赞的评论
-        self.bool_bus_first = True if config_settings.get("信息来源", "是否用javlibrary整理影片时优先从javbus下载图片？") == '是' else False
         ################################################### 其他设置 ####################################################
         # 是否 使用简体中文 简介翻译的结果和jav特征会变成“简体”还是“繁体”
         self.bool_zh = True if config_settings.get("其他设置", "简繁中文？") == '简' else False
@@ -119,8 +118,6 @@ class Settings(object):
         # 自定义 命名格式中“标题”的长度 windows只允许255字符，所以限制长度，但nfo中的标题是全部
         self.int_title_len = int(config_settings.get("其他设置", "重命名中的标题长度（50~150）"))
         ######################################## 百度翻译API ####################################################
-        # 是否 需要简介
-        self.bool_plot = True if config_settings.get("百度翻译API", "是否需要日语简介？") == '是' else False
         # 是否 把日语简介翻译为中文
         self.bool_tran = True if config_settings.get("百度翻译API", "是否翻译为中文？") == '是' else False
         # 账户 百度翻译api
@@ -133,10 +130,6 @@ class Settings(object):
         self._al_id = config_settings.get("百度人体分析", "appid")
         self._ai_ak = config_settings.get("百度人体分析", "api key")
         self._al_sk = config_settings.get("百度人体分析", "secret key")
-
-        ##########################################################################################################
-        # 是否 重命名视频所在文件夹，或者为它创建独立文件夹
-        self.bool_rename_folder = self.judge_need_rename_folder()
 
     # ######################[收集nfo]#####################################
     # 命名nfo中title的格式
@@ -178,26 +171,26 @@ class Settings(object):
     # 参数：用户自定义的归类根目录，用户选择整理的文件夹路径
     # 返回：归类根目录路径
     # 辅助：os.sep，os.system
-    def check_classify_root(self, root_choose, sep):
+    def check_classify_target_directory(self, dir_choose):
         if self.bool_classify:
-            custom_root = self._custom_root.rstrip(sep)
+            custom_classify_target_dir = self._custom_classify_target_dir.rstrip(sep)
             # 用户使用默认的“所选文件夹”
-            if custom_root == '所选文件夹':
-                return root_choose + sep + '归类完成'
+            if custom_classify_target_dir == '所选文件夹':
+                return f'{dir_choose}{sep}归类完成'
             # 归类根目录 是 用户输入的路径c:\a，继续核实合法性
             else:
-                # 用户输入的路径 不是 所选文件夹root_choose
-                if custom_root != root_choose:
-                    if custom_root[:2] != root_choose[:2]:
-                        print('归类的根目录“', custom_root, '”和所选文件夹不在同一磁盘无法归类！请修正！')
+                # 用户输入的路径 不是 所选文件夹dir_choose
+                if custom_classify_target_dir != dir_choose:
+                    if custom_classify_target_dir[:2] != dir_choose[:2]:
+                        print('归类的根目录“', custom_classify_target_dir, '”和所选文件夹不在同一磁盘无法归类！请修正！')
                         system('pause')
-                    if not exists(custom_root):
-                        print('归类的根目录“', custom_root, '”不存在！无法归类！请修正！')
+                    if not exists(custom_classify_target_dir):
+                        print('归类的根目录“', custom_classify_target_dir, '”不存在！无法归类！请修正！')
                         system('pause')
-                    return custom_root
-                # 用户输入的路径 就是 所选文件夹root_choose
+                    return custom_classify_target_dir
+                # 用户输入的路径 就是 所选文件夹dir_choose
                 else:
-                    return root_choose + sep + '归类完成'
+                    return f'{dir_choose}{sep}归类完成'
         else:
             return ''
 
@@ -219,11 +212,11 @@ class Settings(object):
     def get_proxy(self):
         if self._bool_proxy and self._custom_proxy:
             if self._bool_http:
-                proxies = {"http": "http://" + self._custom_proxy,
-                           "https": "https://" + self._custom_proxy}
+                proxies = {'http': f'http://{self._custom_proxy}',
+                           'https': f'https://{self._custom_proxy}'}
             else:
-                proxies = {"http": "socks5://" + self._custom_proxy,
-                           "https": "socks5://" + self._custom_proxy}
+                proxies = {'http': f'socks5://{self._custom_proxy}',
+                           'https': f'socks5://{self._custom_proxy}'}
             proxy_library = proxies if self._bool_library_proxy else {}  # 请求javlibrary时传递的参数
             proxy_bus = proxies if self._bool_bus_proxy else {}  # 请求javbus时传递的参数
             proxy_321 = proxies if self._bool_321_proxy else {}  # 请求jav321时传递的参数
@@ -249,51 +242,36 @@ class Settings(object):
         return self._custom_divulge_words_in_filename.upper().split('、')
 
     # 得到干扰车牌选择的文字list
-    def list_surplus_word_in_filename(self, av_type):
-        if av_type == '有码':
+    def list_surplus_word_in_filename(self):
+        if self._pattern == '有码':
             return self._custom_surplus_words_youma_in_filename.upper().split('、')
         else:
             return self._custom_surplus_words_wuma_in_filename.upper().split('、')
-
-    # 自定义有码、无码、素人、FC2的对应称谓
-    def av_type(self):
-        return self._av_type
 
     # #########################[信息来源]##############################
 
     # #########################[其他设置]##############################
     # javlibrary网址，是简体还是繁体
     def get_url_library(self):
-        url_library = self._url_library
-        if not url_library.endswith('/'):
-            url_library += '/'
-        return url_library + 'cn/'
+        return f'{self._url_library.rstrip("/")}/cn'
 
     # javbus网址
     def get_url_bus(self):
-        if not self._url_bus.endswith('/'):
-            url_web_bus = self._url_bus + '/'
-        else:
-            url_web_bus = self._url_bus
-        return url_web_bus
+        return self._url_bus.rstrip('/')
 
     # jav321网址
     def get_url_321(self):
         if self.bool_zh:
             url_search_321 = 'https://www.jav321.com/search'
-            url_web_321 = 'https://www.jav321.com/'
+            url_web_321 = 'https://www.jav321.com'
         else:
             url_search_321 = 'https://tw.jav321.com/search'
-            url_web_321 = 'https://tw.jav321.com/'
+            url_web_321 = 'https://tw.jav321.com'
         return url_search_321, url_web_321
 
     # javdb网址
     def get_url_db(self):
-        if not self._url_db.endswith('/'):
-            url_db = self._url_db + '/'
-        else:
-            url_db = self._url_db
-        return url_db
+        return self._url_db.rstrip('/')
 
     # 得到扫描文件类型
     def tuple_video_type(self):
@@ -314,3 +292,85 @@ class Settings(object):
             return AipBodyAnalysis(self._al_id, self._ai_ak, self._al_sk)
         else:
             return None
+
+    def get_dict_data(self):
+        if self._pattern == '无码':
+            return {'车牌': 'CBA-123',
+                    '车牌前缀': 'CBA',
+                    '标题': '无码标题',
+                    '完整标题': '完整无码标题',
+                    '导演': '无码导演',
+                    '制作商': '无码制作商',
+                    '发行商': '无码发行商',
+                    '评分': '0',
+                    '片长': '0',
+                    '系列': '无码系列',
+                    '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
+                    '首个演员': '无码演员', '全部演员': '无码演员',
+                    '空格': ' ',
+                    '\\': sep, '/': sep,  # 文件路径分隔符
+                    '是否中字': '',
+                    '是否流出': '',
+                    '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
+                    '视频': 'CBA-123',  # 当前及未来的视频文件名，不带ext
+                    '原文件名': 'CBA-123', '原文件夹名': 'CBA-123', }
+        elif self._pattern == '素人':
+            return {'车牌': 'XYZ-123',
+                    '车牌前缀': 'XYZ',
+                    '标题': '素人标题',
+                    '完整标题': '完整素人标题',
+                    '导演': '素人导演',
+                    '制作商': '素人制作商',
+                    '发行商': '素人发行商',
+                    '评分': '0',
+                    '片长': '0',
+                    '系列': '素人系列',
+                    '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
+                    '首个演员': '素人演员', '全部演员': '素人演员',
+                    '空格': ' ',
+                    '\\': sep, '/': sep,  # 文件路径分隔符
+                    '是否中字': '',
+                    '是否流出': '',
+                    '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
+                    '视频': 'XYZ-123',  # 当前及未来的视频文件名，不带ext
+                    '原文件名': 'XYZ-123', '原文件夹名': 'XYZ-123', }
+        elif self._pattern == 'fc2':
+            return {'车牌': 'FC2-123',
+                    '车牌前缀': 'FC2',
+                    '标题': 'FC2标题',
+                    '完整标题': '完整FC2标题',
+                    '导演': 'FC2导演',
+                    '制作商': 'fc2制作商',
+                    '发行商': 'fc2发行商',
+                    '评分': '0',
+                    '片长': '0',
+                    '系列': 'FC2系列',
+                    '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
+                    '首个演员': 'FC2演员', '全部演员': 'FC2演员',
+                    '空格': ' ',
+                    '\\': sep, '/': sep,  # 文件路径分隔符
+                    '是否中字': '',
+                    '是否流出': '',
+                    '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
+                    '视频': 'FC2-123',  # 当前及未来的视频文件名，不带ext
+                    '原文件名': 'FC2-123', '原文件夹名': 'FC2-123', }
+        else:
+            return {'车牌': 'ABC-123',
+                    '车牌前缀': 'ABC',
+                    '标题': '有码标题',
+                    '完整标题': '完整有码标题',
+                    '导演': '有码导演',
+                    '制作商': '有码制作商',
+                    '发行商': '有码发行商',
+                    '评分': '0',
+                    '片长': '0',
+                    '系列': '有码系列',
+                    '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
+                    '首个演员': '有码演员', '全部演员': '有码演员',
+                    '空格': ' ',
+                    '\\': sep, '/': sep,  # 文件路径分隔符
+                    '是否中字': '',
+                    '是否流出': '',
+                    '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
+                    '视频': 'ABC-123',  # 当前及未来的视频文件名，不带ext
+                    '原文件名': 'ABC-123', '原文件夹名': 'ABC-123', }
