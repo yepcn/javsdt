@@ -131,7 +131,7 @@ def find_car_suren(file, list_suren_car):
 # 辅助：无
 def list_suren_car():
     try:
-        with open('【素人车牌】.txt', 'r', encoding="utf-8") as f:
+        with open('StaticFiles/【素人车牌】.txt', 'r', encoding="utf-8") as f:
             list_suren_cars = list(f)
     except:
         print('【素人车牌】.txt读取失败！停止工作！')

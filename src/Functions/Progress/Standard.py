@@ -4,7 +4,51 @@ from os import sep
 from configparser import RawConfigParser
 from shutil import copyfile
 
-from Functions.Record import record_video_old, record_fail
+from Record import record_video_old, record_fail
+
+
+def jav_model_to_dict_for_user():
+    dict_data['车牌'] = car  # car可能发生了变化
+    dict_data['车牌前缀'] = car.split('-')[0]
+    if premieredg:
+        dict_data['发行年月日'] = time_premiered = premieredg.group(1)
+        dict_data['发行年份'] = time_premiered[0:4]
+        dict_data['月'] = time_premiered[5:7]
+        dict_data['日'] = time_premiered[8:10]
+    else:
+        dict_data['发行年月日'] = '1970-01-01'
+        dict_data['发行年份'] = '1970'
+        dict_data['月'] = '01'
+        dict_data['日'] = '01'
+    dict_data['片长'] = runtimeg.group(1) if runtimeg else '0'
+    dict_data['导演'] = replace_xml_win(directorg.group(1)) if directorg else '有码导演'
+    dict_data['制作商'] = replace_xml_win(studiog.group(1)) if studiog else '有码制作商'
+    publisher = publisherg.group(1) if str(publisherg) != 'None' else ''
+    #  和 第一个演员
+    if actors:
+        if len(actors) > 7:
+            dict_data['全部演员'] = ' '.join(actors[:7])
+        else:
+            dict_data['全部演员'] = ' '.join(actors)
+        dict_data['首个演员'] = actors[0]
+    else:
+        dict_data['首个演员'] = dict_data['全部演员'] = '有码演员'
+    # 处理影片的标题过长  给用户重命名用的标题是缩减过的，nfo中是“完整标题”，但用户在ini中只用写“标题”
+    dict_data['完整标题'] = replace_xml_win(title)
+    if len(dict_data['完整标题']) > settings.int_title_len:
+        dict_data['标题'] = dict_data['完整标题'][:settings.int_title_len]
+    else:
+        dict_data['标题'] = dict_data['完整标题']
+    # 有些用户需要删去 标题末尾 可能存在的 演员姓名
+    if settings.bool_strip_actors and dict_data['标题'] .endswith(dict_data['全部演员']):
+        dict_data['标题']  = dict_data['标题'] [:-len(dict_data['全部演员'])].rstrip()
+        dict_data['评分'] = '%.1f' % float_score
+    else:
+        dict_data['评分'] = '0'
+
+    dict_for_user['系列'] = jav_model.Series if jav_model.Series else '有码系列'
+    dict_for_user['视频'] = dict_for_user['原文件名'] = jav_file.name_no_ext  # dict_data['视频']，先定义为原文件名，即将发生变化。
+    dict_for_user['原文件夹名'] = jav_file.folder
 
 
 # 功能：1重命名视频

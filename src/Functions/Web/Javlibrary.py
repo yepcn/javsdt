@@ -1,12 +1,11 @@
 # -*- coding:utf-8 -*-
 import re, os, requests
 from Class.EnumStatus import StatusScrape
-from Functions.XML import replace_xml_win
+from XML import replace_xml_win
 # from traceback import format_exc
 
 
 # 搜索javlibrary，或请求javlibrary上jav所在网页，返回html
-from JavModel import JavModel
 
 
 def get_library_html(url, proxy):
@@ -37,7 +36,7 @@ def get_library_html(url, proxy):
 
 
 # 返回: Status, html_jav_library
-def find_jav_html_on_library(jav, url_library, proxy_library, ):
+def find_jav_html_on_library(file_name, jav_model, url_library, proxy_library):
     html_jav_library = ''
     # 用户指定了网址，则直接得到jav所在网址
     if '图书馆' in jav.name:
@@ -89,9 +88,6 @@ def find_jav_html_on_library(jav, url_library, proxy_library, ):
         # 第三种情况: 搜索不到这部影片，搜索结果页面什么都没有
         else:
             return StatusScrape.library_not_found, html_jav_library
-
-
-def re_library(jav_model, html_jav_library, settings):
     # javlibrary的精彩影评   (.+?\s*.*?\s*.*?\s*.*?) 下面的匹配可能很奇怪，没办法，就这么奇怪
     review = ''
     if settings.bool_review:
@@ -146,3 +142,4 @@ def re_library(jav_model, html_jav_library, settings):
     # 特点风格
     genres = re.findall(r'category tag">(.+?)<', html_jav_library)
     return jav_model, genres
+

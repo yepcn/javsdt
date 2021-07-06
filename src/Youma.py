@@ -1,37 +1,33 @@
 # -*- coding:utf-8 -*-
-import os, re
+import os
 from shutil import copyfile
 from traceback import format_exc
 # ################################################# 相同 ###########################################################
 from Class.Settings import Settings
 from Class.JavFile import JavFile
 from EnumStatus import StatusScrape
-from Functions.Status import judge_exist_nfo, count_num_videos, judge_separate_folder
-from Functions.User import choose_directory
-from Functions.Record import record_start, record_fail
-from Functions.Process import perfect_dict_data, judge_subtitle_and_divulge
-from Functions.Standard import rename_mp4, rename_folder, classify_files, classify_folder
-from Functions.XML import replace_xml, replace_xml_win
-from Functions.Picture import check_picture, add_watermark_subtitle
-from Functions.Requests.Download import download_pic
-from Functions.Genre import better_dict_genre
-from Functions.Car import list_suren_car
+from Status import judge_exist_nfo, count_num_videos, judge_separate_folder
+from User import choose_directory
+from Record import record_start, record_fail
+from Prepare import perfect_dict_data, judge_subtitle_and_divulge
+from Standard import rename_mp4, rename_folder, classify_files, classify_folder
+from Picture import check_picture, add_watermark_subtitle
+from Download import download_pic
+from Genre import better_dict_genre
+from Car import list_suren_car
 # ################################################## 部分不同 ##########################################################
-from Functions.Process import judge_exist_divulge
-from Functions.Status import check_actors
-from Functions.Standard import collect_sculpture
-from Functions.Baidu import translate
-from Functions.Picture import add_watermark_divulge, crop_poster_youma
-from Functions.Requests.ArzonReq import steal_arzon_cookies, find_plot_arzon
-from Functions.Record import record_warn
+from Status import check_actors
+from Standard import collect_sculpture
+from Picture import add_watermark_divulge, crop_poster_youma
+from Functions.Web.Arzon import steal_arzon_cookies, find_plot_arzon
+from Record import record_warn
 # ################################################## 独特 ##########################################################
-from Functions.Car import find_car_library
-from Functions.Requests.JavbusReq import find_series_cover_genres_bus
+from Car import find_car_library
+from Functions.Web.Javbus import find_series_cover_genres_bus
 
 #  main开始
-from JavModel import JavModel
-from JavdbReq import find_jav_html_on_db, re_db
-from JavlibraryReq import find_jav_html_on_library, re_library
+from Javdb import find_jav_html_on_db, re_db
+from Javlibrary import find_jav_html_on_library
 
 print('1、避开夜晚高峰期，访问javlibrary和arzon很慢。\n'
       '2、若一直打不开javlibrary，请在ini中更新防屏蔽网址\n')
@@ -142,20 +138,7 @@ while input_start_key == '':
         dict_car_episode = {}  # 存放: 每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
         dict_subtitle_file = {}  # 存放: jav的字幕文件和车牌对应关系 {'c:\a\abc_123.srt': 'abc-123'}
         # 判断文件是不是字幕文件，放入dict_subtitle_files中
-        for file_raw in list_sub_files:
-            file_temp = file_raw.upper()
-            if file_temp.endswith(('.SRT', '.VTT', '.ASS', '.SSA', '.SUB', '.SMI',)):
-                # 当前模式不处理FC2
-                if 'FC2' in file_temp:
-                    continue
-                # 去除用户设置的、干扰车牌的文字
-                for word in list_surplus_words_in_filename:
-                    file_temp = file_temp.replace(word, '')
-                # 得到字幕文件名中的车牌
-                subtitle_car = find_car_library(file_temp, list_suren_cars)
-                # 将该字幕文件和其中的车牌对应到dict_subtitle_files中
-                if subtitle_car:
-                    dict_subtitle_file[file_raw] = subtitle_car
+        dict_subtitle_file = settings.get_dict_subtitle_file(list_sub_files)
         # print(dict_subtitle_files)
         # 判断文件是不是视频，放入list_jav_struct中
         for file_raw in list_sub_files:
@@ -235,7 +218,7 @@ while input_start_key == '':
                 car = jav_model.car
 
                 # region 从javlibrary获取信息
-                status, html_jav_library = find_jav_html_on_library(jav_file, url_library, proxy_library)
+                status, genres_library = find_jav_html_on_library(jav_file.name_no_ext, jav_model, url_library, proxy_library)
                 if status == StatusScrape.library_specified_url_wrong:
                     no_fail += 1
                     record_fail(f'    >第{no_fail}个失败！你指定的javlibrary网址有错误: {path_relative}\n')
@@ -251,8 +234,6 @@ while input_start_key == '':
                 else:
                     # 成功找到  Status.success
                     pass
-                # 正则匹配
-                genres_library = re_library(jav_model, html_jav_library, settings)
                 # 优化genres_library
                 try:
                     genres_library = [dict_library_genres[i] for i in genres_library if dict_library_genres[i] != '删除']
@@ -265,10 +246,14 @@ while input_start_key == '':
 
                 # region 前往javbus查找【封面】【系列】【特征】
                 status, genres_bus = find_series_cover_genres_bus(jav_model, url_bus, proxy_bus)
-                if status == StatusScrape.bus_multiple_search_results:
+                if status == StatusScrape.bus_specified_url_wrong:
+                    no_fail += 1
+                    record_fail(f'    >第{no_fail}个失败！你指定的javbus网址有错误: {path_relative}\n')
+                    continue  # 结束对该jav的整理
+                elif status == StatusScrape.bus_multiple_search_results:
                     no_warn += 1
                     record_warn(f'    >第{no_warn}个警告！部分信息可能错误，javbus搜索到同车牌的不同视频: {car}，{path_relative}\n')
-                if status == StatusScrape.bus_not_found:
+                elif status == StatusScrape.bus_not_found:
                     no_warn += 1
                     record_warn(f'    >第{no_warn}个警告！javbus有码找不到该车牌的信息: {car}，{path_relative}\n')
                 # 优化genres_bus
@@ -284,29 +269,19 @@ while input_start_key == '':
                 # endregion
 
                 # region arzon找简介
-                plot_for_nfo = ''
-                if jav_file.episode == 1:  # 只有cd1需要，cd2 cd3的nfo写了也没用
-                    status, jav_model.Plot, cookie_arzon = find_plot_arzon(car, cookie_arzon, proxy_arzon)
-                    if status == StatusScrape.arzon_exist_but_no_plot:
-                        no_warn += 1
-                        record_warn(f'    >第{no_warn}个失败！找不到简介，尽管arzon上有搜索结果: {path_relative}\n')
-                    elif status == StatusScrape.arzon_not_found:
-                        no_warn += 1
-                        record_warn(f'    >第{no_warn}个失败！找不到简介，影片被arzon下架: {path_relative}\n')
-                    elif status == StatusScrape.interrupted:
-                        no_warn += 1
-                        record_warn(f'    >第{no_warn}个失败！访问arzon失败，需要重新整理该简介: {path_relative}\n')
-                    else:
-                        # Status.success
-                        # 需要翻译简介
-                        if settings.bool_tran:
-                            plot_for_nfo = translate(tran_id, tran_sk, jav_model.Plot, to_language)
-                            if plot_for_nfo.startswith('【百度'):
-                                no_fail += 1
-                                record_fail(f'    >第{no_fail}个失败！翻译简介失败: {path_relative}\n')
-                    # 去除xml文档不允许的特殊字符 &<>
-                    plot_for_nfo = replace_xml(plot_for_nfo)
-                # print(plot_for_nfo)
+                status, cookie_arzon = find_plot_arzon(jav_model, cookie_arzon, proxy_arzon)
+                if status == StatusScrape.arzon_exist_but_no_plot:
+                    no_warn += 1
+                    record_warn(f'    >第{no_warn}个失败！找不到简介，尽管arzon上有搜索结果: {path_relative}\n')
+                elif status == StatusScrape.arzon_not_found:
+                    no_warn += 1
+                    record_warn(f'    >第{no_warn}个失败！找不到简介，影片被arzon下架: {path_relative}\n')
+                elif status == StatusScrape.interrupted:
+                    no_warn += 1
+                    record_warn(f'    >第{no_warn}个失败！访问arzon失败，需要重新整理该简介: {path_relative}\n')
+                else:
+                    # Status.success
+                    pass
                 # endregion
 
                 # region 整合完善genres
@@ -321,6 +296,7 @@ while input_start_key == '':
                 # 是CD1还是CDn？
                 num_all_episodes = dict_car_episode[jav_file.car]  # 该车牌总共多少集
                 str_cd = f'-cd{jav_file.episode}' if num_all_episodes > 1 else ''
+                dict_for_standard =
 
                 # 1重命名视频
                 try:

@@ -20,4 +20,4 @@
 /src/*.png
 
 /src/*.txt
-!/src/【素人车牌】.txt
+!/src/StaticFiles/【素人车牌】.txt

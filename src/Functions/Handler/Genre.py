@@ -22,7 +22,7 @@ def better_dict_genre(website, to_language):
     # 简繁中文，3简体 4繁体
     col_chinese = 3 if to_language == 'zh' else 4
     # 打开Excel文件
-    xlsxPath = '【特征对照表】.xlsx' if os.path.exists('【特征对照表】.xlsx') else '../../【特征对照表】.xlsx'
+    xlsxPath = '【特征对照表】.xlsx' if os.path.exists('StaticFiles/【特征对照表】.xlsx') else '../../【特征对照表】.xlsx'
     # xlsxPath = '【特征对照表】.xlsx'
     excel = xlrd.open_workbook(xlsxPath)
     sheet = excel.sheet_by_name('有码')    # excel中的某一sheet

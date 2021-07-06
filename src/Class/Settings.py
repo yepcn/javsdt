@@ -6,6 +6,9 @@ from aip import AipBodyAnalysis
 
 
 # 设置
+from Car import find_car_library
+
+
 class Settings(object):
     def __init__(self, pattern):
         self._pattern = pattern
@@ -88,9 +91,9 @@ class Settings(object):
         self._bool_dmm_proxy = True if config_settings.get("局部代理", "是否代理dmm图片？") == '是' else False
         #################################################### 原影片文件的性质 ################################################
         # 自定义 无视的字母数字 去除影响搜索结果的字母数字 xhd1080、mm616、FHD-1080
-        self._custom_surplus_words_youma_in_filename = config_settings.get("原影片文件的性质", "有码素人无视多余的字母数字")
-        # 自定义 无视的字母数字 去除影响搜索结果的字母数字 full、tokyohot、
-        self._custom_surplus_words_wuma_in_filename = config_settings.get("原影片文件的性质", "无码无视多余的字母数字")
+        self._list_surplus_words_in_filename = config_settings.get("原影片文件的性质", "有码素人无视多余的字母数字").upper().split('、')\
+                                                if self._pattern == '有码'\
+                                                else config_settings.get("原影片文件的性质", "无码无视多余的字母数字").upper().split('、')
         # 自定义 原影片性质 影片有中文，体现在视频名称中包含这些字符
         self._custom_subtitle_words_in_filename = config_settings.get("原影片文件的性质", "是否中字即文件名包含")
         # 自定义 是否中字 这个元素的表现形式
@@ -241,15 +244,6 @@ class Settings(object):
     def list_divulge_word_in_filename(self):
         return self._custom_divulge_words_in_filename.upper().split('、')
 
-    # 得到干扰车牌选择的文字list
-    def list_surplus_word_in_filename(self):
-        if self._pattern == '有码':
-            return self._custom_surplus_words_youma_in_filename.upper().split('、')
-        else:
-            return self._custom_surplus_words_wuma_in_filename.upper().split('、')
-
-    # #########################[信息来源]##############################
-
     # #########################[其他设置]##############################
     # javlibrary网址，是简体还是繁体
     def get_url_library(self):
@@ -374,3 +368,24 @@ class Settings(object):
                     '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
                     '视频': 'ABC-123',  # 当前及未来的视频文件名，不带ext
                     '原文件名': 'ABC-123', '原文件夹名': 'ABC-123', }
+
+
+    def get_dict_subtitle_file(self, list_sub_files):
+        if self._pattern == 'Fc2':
+
+        else:
+            for file_raw in list_sub_files:
+                file_temp = file_raw.upper()
+                if file_temp.endswith(('.SRT', '.VTT', '.ASS', '.SSA', '.SUB', '.SMI',)):
+                    # 当前模式不处理FC2
+                    if 'FC2' in file_temp:
+                        continue
+                    # 去除用户设置的、干扰车牌的文字
+                    for word in self._list_surplus_words_in_filename:
+                        file_temp = file_temp.replace(word, '')
+                    # 得到字幕文件名中的车牌
+                    subtitle_car = find_car_library(file_temp, list_suren_cars)
+                    # 将该字幕文件和其中的车牌对应到dict_subtitle_files中
+                    if subtitle_car:
+                        dict_subtitle_file[file_raw] = subtitle_car
+
