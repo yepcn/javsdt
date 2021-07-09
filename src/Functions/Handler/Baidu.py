@@ -1,9 +1,7 @@
 # -*- coding:utf-8 -*-
-import requests
-from os import system
+import requests, json
 from time import sleep, time
 from hashlib import md5
-from json import loads
 # from traceback import format_exc
 
 
@@ -38,7 +36,7 @@ def translate(api_id, api_key, word, to_lang):
             sleep(1)
             continue
         # 百度返回了dict json
-        json_reads = loads(content)
+        json_reads = json.loads(content)
         # print(json_reads)
         if 'error_code' in json_reads:    # 返回错误码
             error_code = json_reads['error_code']
@@ -54,19 +52,15 @@ def translate(api_id, api_key, word, to_lang):
                 print('    >百度翻译拉闸了...重新翻译...')
             elif error_code == '54003':
                 print('    >使用过于频繁，百度翻译不想给你用了...')
-                system('pause')
             elif error_code == '52003':
                 print('    >请正确输入百度翻译API账号，请阅读【使用说明】！')
-                print('>>javsdt已停止工作...')
-                system('pause')
+                input('>>javsdt已停止工作...')
             elif error_code == '58003':
                 print('    >你的百度翻译API账户被百度封禁了，请联系作者，告诉你解封办法！“')
-                print('>>javsdt已停止工作...')
-                system('pause')
+                input('>>javsdt已停止工作...')
             elif error_code == '90107':
                 print('    >你的百度翻译API账户还未通过认证或者失效，请前往API控制台解决问题！“')
-                print('>>javsdt已停止工作...')
-                system('pause')
+                input('>>javsdt已停止工作...')
             else:
                 print('    >百度翻译error_code！请截图联系作者！', error_code)
             continue

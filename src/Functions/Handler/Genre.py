@@ -4,7 +4,7 @@ import xlrd
 
 
 # 功能：得到优化的特征字典
-# 参数：用户在用哪个exe（对应sheet_name） ，简繁中文to_language   示例：Javbus有码 ，zh
+# 参数：用户在用哪个exe（对应要在表格中取哪一列） ，简繁中文to_language   示例：Javbus有码 ，zh
 # 返回：优化的特征字典
 # 辅助：xlrd
 def better_dict_genre(website, to_language):
@@ -31,7 +31,6 @@ def better_dict_genre(website, to_language):
         list_row = sheet.row_values(i)  # i行的list
         if list_row[col]:
             dict[list_row[col]] = list_row[col_chinese]    # 原特征 和 优化后的中文特征 对应
-    # print(dict)
     return dict
 
 # test
