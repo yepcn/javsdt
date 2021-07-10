@@ -1,6 +1,5 @@
 # -*- coding:utf-8 -*-
-from os import sep, system, walk
-from os.path import exists
+import os
 from shutil import copyfile
 
 

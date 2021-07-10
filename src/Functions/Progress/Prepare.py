@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 from os import sep
-from os.path import exists
+import os
 from xml.etree.ElementTree import parse, ParseError
 
 
@@ -52,7 +52,7 @@ def judge_exist_subtitle(dir_current, name_no_ext, list_subtitle_character):
             return True
     # 先前整理过的nfo中有 ‘中文字幕’这个Genre
     path_old_nfo = f'{dir_current}{sep}{name_no_ext}.nfo'
-    if exists(path_old_nfo):
+    if os.path.exists(path_old_nfo):
         try:
             tree = parse(path_old_nfo)
         except ParseError:  # nfo可能损坏
@@ -75,7 +75,7 @@ def judge_exist_divulge(dir_current, name_no_ext, list_divulge_character):
             return True
     # 先前整理过的nfo中有 ‘中文字幕’这个Genre
     path_old_nfo = f'{dir_current}{sep}{name_no_ext}.nfo'
-    if exists(path_old_nfo):
+    if os.path.exists(path_old_nfo):
         try:
             tree = parse(path_old_nfo)
         except ParseError:  # nfo可能损坏

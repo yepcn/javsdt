@@ -1,9 +1,8 @@
 # -*- coding:utf-8 -*-
 import re
-from os import system
 
 
-# 功能：发现用于javlibrary的有码车牌，因为T28-、ID比较特殊在
+# 功能：发现用于javlibrary的有码车牌，注意T28-、ID比较特殊
 # 参数：大写后的视频文件名file，素人车牌list_suren_car    示例：AVOP-127.MP4    ['LUXU', 'MIUM']
 # 返回：发现的车牌    示例：AVOP-127
 # 辅助：re.search
@@ -139,8 +138,7 @@ def list_suren_car():
         with open('StaticFiles/【素人车牌】.txt', 'r', encoding="utf-8") as f:
             list_suren_cars = list(f)
     except:
-        print('【素人车牌】.txt读取失败！停止工作！')
-        system('pause')
+        input('【素人车牌】.txt读取失败！停止工作！')
     list_suren_cars = [i.strip().upper() for i in list_suren_cars if i != '\n']
     # print(list_suren_cars)
     return list_suren_cars

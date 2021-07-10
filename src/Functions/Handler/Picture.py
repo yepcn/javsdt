@@ -1,5 +1,4 @@
 # -*- coding:utf-8 -*-
-from os import system
 from PIL import Image
 
 
@@ -20,7 +19,7 @@ def check_picture(path_picture):
 # 功能：调用百度AL人体分析，分析图片中的人体
 # 参数：图片路径，百度人体分析client
 # 返回：鼻子的x坐标
-# 辅助：os.system, cli.bodyAnalysis
+# 辅助：cli.bodyAnalysis
 def image_cut(path, client):
     # if bool_face:   # 启动人体分析的这两行代码在settings.py中
     #     client = AipBodyAnalysis(al_id, ai_ak, al_sk)
@@ -34,8 +33,7 @@ def image_cut(path, client):
             print('    >人体分析出现错误，请对照“人体分析错误表格”：', result)
             print('    >正在尝试重新人体检测...')
             continue
-    print('    >人体分析无法使用...请先解决人体分析的问题，或截图联系作者...')
-    system('pause')
+    input('    >人体分析无法使用...请先解决人体分析的问题，或截图联系作者...')
 
 
 # 功能：裁剪有码的fanart封面作为poster，一般fanart是800*538，把右边的379*538裁剪下来

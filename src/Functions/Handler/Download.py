@@ -9,14 +9,14 @@ def download_pic(url, path, proxy):
     for retry in range(5):
         try:
             if proxy:
-                r = requests.get(url, proxies=proxy, stream=True, timeout=(6, 10))
+                rqs = requests.get(url, proxies=proxy, stream=True, timeout=(6, 10))
                 with open(path, 'wb') as pic:
-                    for chunk in r:
+                    for chunk in rqs:
                         pic.write(chunk)
             else:
-                r = requests.get(url, stream=True, timeout=(6, 10))
+                rqs = requests.get(url, stream=True, timeout=(6, 10))
                 with open(path, 'wb') as pic:
-                    for chunk in r:
+                    for chunk in rqs:
                         pic.write(chunk)
         except requests.exceptions.ProxyError:
             # print(format_exc())
