@@ -7,7 +7,18 @@ from shutil import copyfile
 from Record import record_video_old, record_fail
 
 
-def jav_model_to_dict_for_user():
+def jav_model_to_dict_for_standard():
+    # region 整合完善genres
+    genres = list(set(genres_library + genres_bus))
+    if bool_subtitle:  # 有“中字“，加上特征”中文字幕”
+        genres.append('中文字幕')
+    if bool_divulge:  # 是流出无码片，加上特征'无码流出'
+        genres.append('无码流出')
+    # endregion
+    # 是否中字 是否无码流出
+    bool_subtitle, bool_divulge = judge_subtitle_and_divulge(jav_file, settings, dict_for_standard, dir_current,
+                                                             list_subtitle_words_in_filename,
+                                                             list_divulge_words_in_filename)
     dict_data['车牌'] = car  # car可能发生了变化
     dict_data['车牌前缀'] = car.split('-')[0]
     if premieredg:

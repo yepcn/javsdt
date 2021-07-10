@@ -6,23 +6,21 @@ from traceback import format_exc
 from Class.Settings import Settings
 from Class.JavFile import JavFile
 from EnumStatus import StatusScrape
-from Status import judge_exist_nfo, count_num_videos, judge_separate_folder
+from Status import judge_exist_nfo, judge_separate_folder
 from User import choose_directory
 from Record import record_start, record_fail
 from Prepare import perfect_dict_data, judge_subtitle_and_divulge
-from Standard import rename_mp4, rename_folder, classify_files, classify_folder
+from Standard import rename_mp4, rename_folder, classify_files, classify_folder, jav_model_to_dict_for_standard
 from Picture import check_picture, add_watermark_subtitle
 from Download import download_pic
 from Genre import better_dict_genre
 from Car import list_suren_car
 # ################################################## 部分不同 ##########################################################
-from Status import check_actors
 from Standard import collect_sculpture
 from Picture import add_watermark_divulge, crop_poster_youma
 from Functions.Web.Arzon import steal_arzon_cookies, find_plot_arzon
 from Record import record_warn
 # ################################################## 独特 ##########################################################
-from Car import find_car_library
 from Functions.Web.Javbus import find_series_cover_genres_bus
 
 #  main开始
@@ -46,14 +44,8 @@ print('\n读取ini文件成功!\n')
 # 路径分隔符: 当前系统的路径分隔符 windows是“\”，linux和mac是“/”
 sep = os.sep
 
-# 检查头像: 如果需要为kodi整理头像，先检查演员头像ini、头像文件夹是否存在。
-check_actors(settings.bool_sculpture)
-
-# 局部代理: 哪些站点需要代理。
-proxy_library, proxy_bus, proxy_321, proxy_db, proxy_arzon, proxy_dmm = settings.get_proxy()
-
 # arzon通行证: 如果需要在nfo中写入日语简介，需要先获得合法的arzon网站的cookie，用于通过成人验证。
-cookie_arzon = steal_arzon_cookies(proxy_arzon) if settings.bool_nfo else {}
+cookie_arzon = steal_arzon_cookies(settings.proxy_arzon) if settings.bool_nfo else {}
 
 # jav网址: javlibrary网址 http://www.m45e.com/   javbus网址 https://www.buscdn.work/
 url_library = settings.get_url_library()
@@ -66,8 +58,6 @@ to_language, tran_id, tran_sk = settings.get_translate_account()
 # 信息字典: 存放影片信息，用于给用户自定义各种命名。
 dict_for_standard = settings.get_dict_data()
 
-# nfo中title的写法。
-list_name_nfo_title = settings.formula_name_nfo_title()
 # 额外将哪些元素放入特征中
 list_extra_genres = settings.list_extra_genre()
 # 重命名视频的格式
@@ -75,13 +65,9 @@ list_name_video = settings.formula_rename_video()
 # 重命名文件夹的格式
 list_name_folder = settings.formula_rename_folder()
 
-# fanart的格式
-list_name_fanart = settings.formula_name_fanart()
 # poster的格式
 list_name_poster = settings.formula_name_poster()
 
-# 视频文件名包含哪些多余的字母数字，需要无视
-list_surplus_words_in_filename = settings.list_surplus_word_in_filename()
 # 文件名包含哪些特殊含义的文字，判断是否中字
 list_subtitle_words_in_filename = settings.list_subtitle_word_in_filename()
 # 文件名包含哪些特殊含义的文字，判断是否是无码流出片
@@ -89,9 +75,6 @@ list_divulge_words_in_filename = settings.list_divulge_word_in_filename()
 
 # 素人番号: 得到事先设置的素人番号，让程序能跳过它们
 list_suren_cars = list_suren_car()
-
-# 需要扫描的文件的类型
-tuple_video_types = settings.tuple_video_type()
 
 # 完善dict_data，如果用户自定义了一些文字，不在元素中，需要将它们添加进dict_data；list_classify_basis，归类标准，归类目标文件夹的组成公式。
 dict_for_standard, list_classify_basis = perfect_dict_data(list_extra_genres, list_name_video, list_name_folder,
@@ -114,12 +97,12 @@ while input_start_key == '':
     # 日志: 在txt中记录一下用户的这次操作，在某个时间选择了某个文件夹
     record_start(dir_choose)
     # 归类: 用户自定义的归类根目录，如果不需要归类则为空
-    dir_classify_target = settings.check_classify_target_directory(dir_choose)
+    dir_classify_target = settings.init_check(dir_choose)
     # 计数: 失败次数及进度
     no_fail = 0  # 已经或可能导致致命错误，比如整理未完成，同车牌有不同视频
     no_warn = 0  # 对整理结果不致命的问题，比如找不到简介
     no_current = 0  # 当前视频的编号
-    sum_all_videos = count_num_videos(dir_choose, tuple_video_types)  # 所选文件夹总共有多少个视频文件
+    sum_all_videos = settings.count_num_videos(dir_choose)  # 所选文件夹总共有多少个视频文件
     print('...文件扫描开始...如果时间过长...请避开高峰期...\n')
     # dir_current【当前所处文件夹】 list_sub_dirs【子文件夹们】 list_sub_files【子文件们】
     for dir_current, list_sub_dirs, list_sub_files in os.walk(dir_choose):
@@ -134,39 +117,12 @@ while input_start_key == '':
         if settings.bool_skip and judge_exist_nfo(list_sub_files):
             continue
         # 对这一层文件夹进行评估,有多少视频，有多少同车牌视频，是不是独立文件夹
-        list_jav_structs = []  # 存放: 需要整理的jav的结构体
-        dict_car_episode = {}  # 存放: 每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
-        dict_subtitle_file = {}  # 存放: jav的字幕文件和车牌对应关系 {'c:\a\abc_123.srt': 'abc-123'}
-        # 判断文件是不是字幕文件，放入dict_subtitle_files中
-        dict_subtitle_file = settings.get_dict_subtitle_file(list_sub_files)
-        # print(dict_subtitle_files)
-        # 判断文件是不是视频，放入list_jav_struct中
-        for file_raw in list_sub_files:
-            file_temp = file_raw.upper()
-            if file_temp.endswith(tuple_video_types) and not file_temp.startswith('.'):
-                no_current += 1
-                if 'FC2' in file_temp:
-                    continue
-                for word in list_surplus_words_in_filename:
-                    file_temp = file_temp.replace(word, '')
-                # 得到视频中的车牌
-                car = find_car_library(file_temp, list_suren_cars)
-                if car:
-                    try:
-                        dict_car_episode[car] += 1  # 已经有这个车牌了，加一集cd
-                    except KeyError:
-                        dict_car_episode[car] = 1  # 这个新车牌有了第一集
-                    # 这个车牌在dict_subtitle_files中，有它的字幕。
-                    if car in dict_subtitle_file.values():
-                        subtitle_file = list(dict_subtitle_file.keys())[list(dict_subtitle_file.values()).index(car)]
-                        del dict_subtitle_file[subtitle_file]
-                    else:
-                        subtitle_file = ''
-                    # 将该jav的各种属性打包好，包括原文件名带扩展名、所在文件夹路径、第几集、所属字幕文件名
-                    jav_struct = JavFile(file_raw, dir_current, car, dict_car_episode[car], subtitle_file, no_current)
-                    list_jav_structs.append(jav_struct)
-                else:
-                    print(f'>>无法处理: {dir_current_relative}{sep}{file_raw}')
+        # 判断文件是不是字幕文件，放入dict_subtitle_file中
+        dict_subtitle_file = settings.get_dict_subtitle_file(list_sub_files)  # 存放: jav的字幕文件和车牌对应关系 {'c:\a\abc_123.srt': 'abc-123'}
+        # print(dict_subtitle_file)
+        # 判断文件是不是视频，放入list_jav_structs中
+        list_jav_structs, dict_car_episode = settings.get_list_jav_structs(list_sub_files, no_current, list_suren_cars, dict_subtitle_file, dir_current, dir_current_relative)
+        # list_jav_structs 存放: 需要整理的jav的结构体; dict_car_episode存放: 每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
 
         # 判定影片所在文件夹是否是独立文件夹，独立文件夹是指该文件夹仅用来存放该影片，而不是大杂烩文件夹
         # 这一层文件夹下有jav
@@ -186,10 +142,6 @@ while input_start_key == '':
                 # 当前进度
                 print(f'>> [{jav_file.number}/{sum_all_videos}]:{jav_file.name}')
                 print(f'    >发现车牌: {jav_file.car}')
-                # 是否中字 是否无码流出
-                bool_subtitle, bool_divulge = judge_subtitle_and_divulge(jav_file, settings, dict_for_standard, dir_current,
-                                                                         list_subtitle_words_in_filename,
-                                                                         list_divulge_words_in_filename)
                 # endregion
 
                 # region 从javdb获取信息
@@ -269,7 +221,7 @@ while input_start_key == '':
                 # endregion
 
                 # region arzon找简介
-                status, cookie_arzon = find_plot_arzon(jav_model, cookie_arzon, proxy_arzon)
+                status, cookie_arzon = find_plot_arzon(jav_model, cookie_arzon, settings.proxy_arzon)
                 if status == StatusScrape.arzon_exist_but_no_plot:
                     no_warn += 1
                     record_warn(f'    >第{no_warn}个失败！找不到简介，尽管arzon上有搜索结果: {path_relative}\n')
@@ -284,19 +236,11 @@ while input_start_key == '':
                     pass
                 # endregion
 
-                # region 整合完善genres
-                genres = list(set(genres_library + genres_bus))
-                if bool_subtitle:  # 有“中字“，加上特征”中文字幕”
-                    genres.append('中文字幕')
-                if bool_divulge:  # 是流出无码片，加上特征'无码流出'
-                    genres.append('无码流出')
-                # endregion
-
                 ################################################################################
                 # 是CD1还是CDn？
                 num_all_episodes = dict_car_episode[jav_file.car]  # 该车牌总共多少集
                 str_cd = f'-cd{jav_file.episode}' if num_all_episodes > 1 else ''
-                dict_for_standard =
+                dict_for_standard = jav_model_to_dict_for_standard(jav_model)
 
                 # 1重命名视频
                 try:
@@ -337,7 +281,7 @@ while input_start_key == '':
                         path_nfo = f'{jav_file.dir}{sep}{jav_file.name_no_ext}.nfo'
                     # nfo中tilte的写法
                     title_in_nfo = ''
-                    for i in list_name_nfo_title:
+                    for i in settings.list_name_nfo_title:
                         title_in_nfo += f'{title_in_nfo}{dict_for_standard[i]}'  # nfo中tilte的写法
                     # 开始写入nfo，这nfo格式是参考的kodi的nfo
                     f = open(path_nfo, 'w', encoding="utf-8")
@@ -402,7 +346,7 @@ while input_start_key == '':
                     # fanart和poster路径
                     path_fanart = f'{jav_file.dir}{sep}'
                     path_poster = f'{jav_file.dir}{sep}'
-                    for i in list_name_fanart:
+                    for i in settings.list_name_fanart:
                         path_fanart += f'{path_fanart}{dict_for_standard[i]}'
                     for i in list_name_poster:
                         path_poster += f'{path_poster}{dict_for_standard[i]}'

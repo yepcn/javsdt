@@ -4,38 +4,6 @@ from os.path import exists
 from shutil import copyfile
 
 
-# 功能：如果需要为kodi整理头像，则先检查“演员头像for kodi.ini”、“演员头像”文件夹是否存在
-# 参数：是否需要整理头像
-# 返回：无
-# 辅助：os.path.exists，os.system，shutil.copyfile
-def check_actors(bool_sculpture):
-    if bool_sculpture:
-        if not exists('演员头像'):
-            print('\n“演员头像”文件夹丢失！请把它放进exe的文件夹中！\n')
-            system('pause')
-        if not exists('【缺失的演员头像统计For Kodi】.ini'):
-            if exists('actors_for_kodi.ini'):
-                copyfile('actors_for_kodi.ini', '【缺失的演员头像统计For Kodi】.ini')
-                print('\n“【缺失的演员头像统计For Kodi】.ini”成功！')
-            else:
-                print('\n请打开“【ini】重新创建ini.exe”创建丢失的程序组件!')
-                system('pause')
-
-
-# 功能：所选文件夹总共有多少个视频文件
-# 参数：用户选择整理的文件夹路径dir_choose，视频类型后缀集合tuple_video_type
-# 返回：无
-# 辅助：os.walk
-def count_num_videos(dir_choose, tuple_video_type):
-    num_videos = 0
-    for dir_current, list_sub_dirs, list_sub_files in walk(dir_choose):
-        for file_raw in list_sub_files:
-            file_temp = file_raw.upper()
-            if file_temp.endswith(tuple_video_type) and not file_temp.startswith('.'):
-                num_videos += 1
-    return num_videos
-
-
 # 功能：判断当前一级文件夹是否含有nfo文件
 # 参数：这层文件夹下的文件们
 # 返回：True

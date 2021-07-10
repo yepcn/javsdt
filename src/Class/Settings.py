@@ -1,12 +1,14 @@
 # -*- coding:utf-8 -*-
+import os
+from os import sep
 from configparser import RawConfigParser
-from os import system, sep
-from os.path import exists
+from shutil import copyfile
+
 from aip import AipBodyAnalysis
 
-
 # 设置
-from Car import find_car_library
+from Car import find_car_library, find_car_fc2
+from JavFile import JavFile
 
 
 class Settings(object):
@@ -20,7 +22,7 @@ class Settings(object):
         # 是否 收集nfo
         self.bool_nfo = True if config_settings.get("收集nfo", "是否收集nfo？") == '是' else False
         # 自定义 nfo中title的格式
-        self._custom_nfo_title = config_settings.get("收集nfo", "nfo中title的格式")
+        self.list_name_nfo_title = config_settings.get("收集nfo", "nfo中title的格式").replace('标题', '完整标题', 1).split('+')
         # 是否 去除 标题 末尾可能存在的演员姓名
         self.bool_strip_actors = True if config_settings.get("收集nfo", "是否去除标题末尾的演员姓名？") == '是' else False
         # 自定义 将系列、片商等元素作为特征，因为emby不会直接在影片介绍页面上显示片商，也不会读取系列set
@@ -37,7 +39,7 @@ class Settings(object):
         # 是否 重命名 视频
         self.bool_rename_video = True if config_settings.get("重命名影片", "是否重命名影片？") == '是' else False
         # 自定义 重命名 视频
-        self._custom_video = config_settings.get("重命名影片", "重命名影片的格式")
+        self.list_name_fanart = config_settings.get("重命名影片", "重命名影片的格式").split('+')
         # 是否 重命名视频所在文件夹，或者为它创建独立文件夹
         self._bool_rename_folder = True if config_settings.get("修改文件夹", "是否重命名或创建独立文件夹？") == '是' else False
         # 自定义 新的文件夹名
@@ -71,29 +73,31 @@ class Settings(object):
         # 是否 对于多cd的影片，kodi只需要一份图片和nfo
         self.bool_cd_only = True if config_settings.get("kodi专用", "是否对多cd只收集一份图片和nfo？") == '是' else False
         ###################################################### 代理 ########################################################
-        # 是否 使用局部代理
-        self._bool_proxy = True if config_settings.get("局部代理", "是否使用局部代理？") == '是' else False
-        # 是否 使用http代理，否 就是socks5
-        self._bool_http = True if config_settings.get("局部代理", "http还是socks5？") == 'http' else False
         # 代理端口
-        self._custom_proxy = config_settings.get("局部代理", "代理端口")
+        self._custom_proxy = config_settings.get("局部代理", "代理端口").strip()
+        # 是否 使用局部代理
+        self._bool_proxy = True if config_settings.get("局部代理", "是否使用局部代理？") == '是' and self._custom_proxy else False
+        # 代理，如果为空则效果为不使用
+        self._proxys_ = {'http': f'http://{self._custom_proxy}', 'https': f'https://{self._custom_proxy}'} \
+            if config_settings.get("局部代理", "http还是socks5？") == '是' and self._custom_proxy \
+            else {'http': f'socks5://{self._custom_proxy}', 'https': f'socks5://{self._custom_proxy}'}
         # 是否 代理javlibrary
-        self._bool_library_proxy = True if config_settings.get("局部代理", "是否代理javlibrary（有问题）？") == '是' else False
+        self.proxy_library = self._proxys if config_settings.get("局部代理", "是否代理javlibrary（有问题）？") == '是' else {}
         # 是否 代理javbus，还有代理javbus上的图片cdnbus
-        self._bool_bus_proxy = True if config_settings.get("局部代理", "是否代理javbus？") == '是' else False
+        self.proxy_bus = self._proxys if config_settings.get("局部代理", "是否代理javbus？") == '是' else {}
         # 是否 代理javbus，还有代理javbus上的图片cdnbus
-        self._bool_321_proxy = True if config_settings.get("局部代理", "是否代理jav321？") == '是' else False
+        self.proxy_321 = self._proxys if config_settings.get("局部代理", "是否代理jav321？") == '是' else {}
         # 是否 代理javdb，还有代理javdb上的图片
-        self._bool_db_proxy = True if config_settings.get("局部代理", "是否代理javdb？") == '是' else False
+        self.proxy_db = self._proxys if config_settings.get("局部代理", "是否代理javdb？") == '是' else {}
         # 是否 代理arzon
-        self._bool_arzon_proxy = True if config_settings.get("局部代理", "是否代理arzon？") == '是' else False
+        self.proxy_arzon = self._proxys if config_settings.get("局部代理", "是否代理arzon？") == '是' else {}
         # 是否 代理dmm图片，javlibrary和javdb上的有码图片几乎都是直接引用dmm
-        self._bool_dmm_proxy = True if config_settings.get("局部代理", "是否代理dmm图片？") == '是' else False
+        self.proxy_dmm = self._proxys if config_settings.get("局部代理", "是否代理dmm图片？") == '是' else {}
         #################################################### 原影片文件的性质 ################################################
         # 自定义 无视的字母数字 去除影响搜索结果的字母数字 xhd1080、mm616、FHD-1080
-        self._list_surplus_words_in_filename = config_settings.get("原影片文件的性质", "有码素人无视多余的字母数字").upper().split('、')\
-                                                if self._pattern == '有码'\
-                                                else config_settings.get("原影片文件的性质", "无码无视多余的字母数字").upper().split('、')
+        self._list_surplus_words_in_filename = config_settings.get("原影片文件的性质", "有码素人无视多余的字母数字").upper().split('、') \
+            if self._pattern == '有码' \
+            else config_settings.get("原影片文件的性质", "无码无视多余的字母数字").upper().split('、')
         # 自定义 原影片性质 影片有中文，体现在视频名称中包含这些字符
         self._custom_subtitle_words_in_filename = config_settings.get("原影片文件的性质", "是否中字即文件名包含")
         # 自定义 是否中字 这个元素的表现形式
@@ -117,7 +121,7 @@ class Settings(object):
         # 网址 javdb
         self._url_db = config_settings.get("其他设置", "javdb网址")
         # 自定义 文件类型 只有列举出的视频文件类型，才会被处理
-        self._custom_file_type = config_settings.get("其他设置", "扫描文件类型")
+        self._tuple_video_types = config_settings.get("其他设置", "扫描文件类型").upper().split('、')
         # 自定义 命名格式中“标题”的长度 windows只允许255字符，所以限制长度，但nfo中的标题是全部
         self.int_title_len = int(config_settings.get("其他设置", "重命名中的标题长度（50~150）"))
         ######################################## 百度翻译API ####################################################
@@ -135,10 +139,6 @@ class Settings(object):
         self._al_sk = config_settings.get("百度人体分析", "secret key")
 
     # ######################[收集nfo]#####################################
-    # 命名nfo中title的格式
-    def formula_name_nfo_title(self):
-        # 给用户命名用的标题可能是删减的，nfo中的标题是完整标题
-        return self._custom_nfo_title.replace('标题', '完整标题', 1).split('+')
 
     # 额外放入特征风格中的元素
     def list_extra_genre(self):
@@ -174,7 +174,23 @@ class Settings(object):
     # 参数：用户自定义的归类根目录，用户选择整理的文件夹路径
     # 返回：归类根目录路径
     # 辅助：os.sep，os.system
-    def check_classify_target_directory(self, dir_choose):
+    # 功能：如果需要为kodi整理头像，则先检查“演员头像for kodi.ini”、“演员头像”文件夹是否存在
+    # 参数：是否需要整理头像
+    # 返回：无
+    # 辅助：os.path.exists，os.system，shutil.copyfile
+    def init_check(self, dir_choose):
+        # 检查头像: 如果需要为kodi整理头像，先检查演员头像ini、头像文件夹是否存在。
+        if self.bool_sculpture:
+            if not os.path.exists('演员头像'):
+                print('\n“演员头像”文件夹丢失！请把它放进exe的文件夹中！\n')
+                os.system('pause')
+            if not os.path.exists('【缺失的演员头像统计For Kodi】.ini'):
+                if os.path.exists('actors_for_kodi.ini'):
+                    copyfile('actors_for_kodi.ini', '【缺失的演员头像统计For Kodi】.ini')
+                    print('\n“【缺失的演员头像统计For Kodi】.ini”成功！')
+                else:
+                    print('\n请打开“【ini】重新创建ini.exe”创建丢失的程序组件!')
+                    os.system('pause')
         if self.bool_classify:
             custom_classify_target_dir = self._custom_classify_target_dir.rstrip(sep)
             # 用户使用默认的“所选文件夹”
@@ -186,10 +202,10 @@ class Settings(object):
                 if custom_classify_target_dir != dir_choose:
                     if custom_classify_target_dir[:2] != dir_choose[:2]:
                         print('归类的根目录“', custom_classify_target_dir, '”和所选文件夹不在同一磁盘无法归类！请修正！')
-                        system('pause')
-                    if not exists(custom_classify_target_dir):
+                        os.system('pause')
+                    if not os.path.exists(custom_classify_target_dir):
                         print('归类的根目录“', custom_classify_target_dir, '”不存在！无法归类！请修正！')
-                        system('pause')
+                        os.system('pause')
                     return custom_classify_target_dir
                 # 用户输入的路径 就是 所选文件夹dir_choose
                 else:
@@ -209,31 +225,6 @@ class Settings(object):
     # 命名poster的格式
     def formula_name_poster(self):
         return self._custom_poster.split('+')
-
-    # #########################[局部代理]##############################
-    # 得到proxy
-    def get_proxy(self):
-        if self._bool_proxy and self._custom_proxy:
-            if self._bool_http:
-                proxies = {'http': f'http://{self._custom_proxy}',
-                           'https': f'https://{self._custom_proxy}'}
-            else:
-                proxies = {'http': f'socks5://{self._custom_proxy}',
-                           'https': f'socks5://{self._custom_proxy}'}
-            proxy_library = proxies if self._bool_library_proxy else {}  # 请求javlibrary时传递的参数
-            proxy_bus = proxies if self._bool_bus_proxy else {}  # 请求javbus时传递的参数
-            proxy_321 = proxies if self._bool_321_proxy else {}  # 请求jav321时传递的参数
-            proxy_db = proxies if self._bool_db_proxy else {}  # 请求javdb时传递的参数
-            proxy_arzon = proxies if self._bool_arzon_proxy else {}  # 请求arzon时传递的参数
-            proxy_dmm = proxies if self._bool_dmm_proxy else {}  # 请求dmm图片时传递的参数
-        else:
-            proxy_library = {}
-            proxy_bus = {}
-            proxy_321 = {}
-            proxy_db = {}
-            proxy_arzon = {}
-            proxy_dmm = {}
-        return proxy_library, proxy_bus, proxy_321, proxy_db, proxy_arzon, proxy_dmm
 
     # #########################[原影片文件的性质]##############################
     # 得到代表中字的文字list
@@ -266,10 +257,6 @@ class Settings(object):
     # javdb网址
     def get_url_db(self):
         return self._url_db.rstrip('/')
-
-    # 得到扫描文件类型
-    def tuple_video_type(self):
-        return tuple(self._custom_file_type.upper().split('、'))
 
     # #########################[百度翻译API]##############################
     # 百度翻译的目标语言、翻译账户
@@ -369,10 +356,19 @@ class Settings(object):
                     '视频': 'ABC-123',  # 当前及未来的视频文件名，不带ext
                     '原文件名': 'ABC-123', '原文件夹名': 'ABC-123', }
 
-
-    def get_dict_subtitle_file(self, list_sub_files):
+    def get_dict_subtitle_file(self, list_sub_files, list_suren_cars):
+        dict_subtitle_file = {}
         if self._pattern == 'Fc2':
-
+            for file_raw in list_sub_files:
+                file_temp = file_raw.upper()
+                if file_temp.endswith(('.SRT', '.VTT', '.ASS', '.SSA', '.SUB', '.SMI',)):
+                    # 仅处理fc2
+                    if 'FC2' not in file_temp:
+                        continue  # 【跳出2】
+                    # 得到字幕文件名中的车牌
+                    subtitle_car = find_car_fc2(file_temp)
+                    if subtitle_car:
+                        dict_subtitle_file[file_raw] = subtitle_car
         else:
             for file_raw in list_sub_files:
                 file_temp = file_raw.upper()
@@ -385,7 +381,52 @@ class Settings(object):
                         file_temp = file_temp.replace(word, '')
                     # 得到字幕文件名中的车牌
                     subtitle_car = find_car_library(file_temp, list_suren_cars)
-                    # 将该字幕文件和其中的车牌对应到dict_subtitle_files中
+                    # 将该字幕文件和其中的车牌对应到dict_subtitle_file中
                     if subtitle_car:
                         dict_subtitle_file[file_raw] = subtitle_car
+        return dict_subtitle_file
 
+    def get_list_jav_structs(self, list_sub_files, no_current, list_suren_cars, dict_subtitle_file, dir_current,
+                             dir_current_relative):
+        list_jav_structs = []  # 存放: 需要整理的jav的结构体
+        dict_car_episode = {}  # 存放: 每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
+        for file_raw in list_sub_files:
+            file_temp = file_raw.upper()
+            if file_temp.endswith(self._tuple_video_types) and not file_temp.startswith('.'):
+                no_current += 1
+                if 'FC2' in file_temp:
+                    continue
+                for word in self._list_surplus_words_in_filename:
+                    file_temp = file_temp.replace(word, '')
+                # 得到视频中的车牌
+                car = find_car_library(file_temp, list_suren_cars)
+                if car:
+                    try:
+                        dict_car_episode[car] += 1  # 已经有这个车牌了，加一集cd
+                    except KeyError:
+                        dict_car_episode[car] = 1  # 这个新车牌有了第一集
+                    # 这个车牌在dict_subtitle_files中，有它的字幕。
+                    if car in dict_subtitle_file.values():
+                        subtitle_file = list(dict_subtitle_file.keys())[list(dict_subtitle_file.values()).index(car)]
+                        del dict_subtitle_file[subtitle_file]
+                    else:
+                        subtitle_file = ''
+                    # 将该jav的各种属性打包好，包括原文件名带扩展名、所在文件夹路径、第几集、所属字幕文件名
+                    jav_struct = JavFile(file_raw, dir_current, car, dict_car_episode[car], subtitle_file, no_current)
+                    list_jav_structs.append(jav_struct)
+                else:
+                    print(f'>>无法处理: {dir_current_relative}{sep}{file_raw}')
+        return list_jav_structs, dict_car_episode
+
+    # 功能：所选文件夹总共有多少个视频文件
+    # 参数：用户选择整理的文件夹路径dir_choose
+    # 返回：无
+    # 辅助：os.walk
+    def count_num_videos(self, dir_choose):
+        num_videos = 0
+        for dir_current, list_sub_dirs, list_sub_files in os.walk(dir_choose):
+            for file_raw in list_sub_files:
+                file_temp = file_raw.upper()
+                if file_temp.endswith(self._tuple_video_types) and not file_temp.startswith('.'):
+                    num_videos += 1
+        return num_videos

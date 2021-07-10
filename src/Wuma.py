@@ -112,7 +112,7 @@ while input_start_key == '':
     # 日志: 在txt中记录一下用户的这次操作，在某个时间选择了某个文件夹
     record_start(dir_choose)
     # 归类: 用户自定义的归类根目录，如果不需要归类则为空
-    dir_classify_target = settings.check_classify_target_directory(dir_choose)
+    dir_classify_target = settings.init_check(dir_choose)
     # 计数: 失败次数及进度
     num_fail = 0  # 已经或可能导致致命错误，比如整理未完成，同车牌有不同视频
     num_current = 0  # 当前视频的编号
