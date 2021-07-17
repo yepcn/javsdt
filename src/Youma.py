@@ -9,7 +9,7 @@ from EnumStatus import StatusScrape
 from Status import judge_exist_nfo, judge_separate_folder
 from User import choose_directory
 from Record import record_start, record_fail
-from Prepare import perfect_dict_data, judge_subtitle_and_divulge
+from Prepare import judge_subtitle_and_divulge
 from Standard import rename_mp4, rename_folder, classify_files, classify_folder, jav_model_to_dict_for_standard
 from Picture import check_picture, add_watermark_subtitle
 from Download import download_pic
@@ -47,39 +47,14 @@ sep = os.sep
 # arzon通行证: 如果需要在nfo中写入日语简介，需要先获得合法的arzon网站的cookie，用于通过成人验证。
 cookie_arzon = steal_arzon_cookies(settings.proxy_arzon) if settings.bool_nfo else {}
 
-# jav网址: javlibrary网址 http://www.m45e.com/   javbus网址 https://www.buscdn.work/
-url_library = settings.get_url_library()
-url_bus = settings.get_url_bus()
-url_db = settings.get_url_db()
-
 # 选择简繁中文以及百度翻译账户: 需要简体中文还是繁体中文，影响影片特征和简介。
 to_language, tran_id, tran_sk = settings.get_translate_account()
-
-# 信息字典: 存放影片信息，用于给用户自定义各种命名。
-dict_for_standard = settings.get_dict_data()
-
-# 额外将哪些元素放入特征中
-list_extra_genres = settings.list_extra_genre()
-# 重命名视频的格式
-list_name_video = settings.formula_rename_video()
-# 重命名文件夹的格式
-list_name_folder = settings.formula_rename_folder()
-
-# poster的格式
-list_name_poster = settings.formula_name_poster()
-
-# 文件名包含哪些特殊含义的文字，判断是否中字
-list_subtitle_words_in_filename = settings.list_subtitle_word_in_filename()
-# 文件名包含哪些特殊含义的文字，判断是否是无码流出片
-list_divulge_words_in_filename = settings.list_divulge_word_in_filename()
 
 # 素人番号: 得到事先设置的素人番号，让程序能跳过它们
 list_suren_cars = list_suren_car()
 
 # 完善dict_data，如果用户自定义了一些文字，不在元素中，需要将它们添加进dict_data；list_classify_basis，归类标准，归类目标文件夹的组成公式。
-dict_for_standard, list_classify_basis = perfect_dict_data(list_extra_genres, list_name_video, list_name_folder,
-                                                           list_name_nfo_title, list_name_fanart, list_name_poster,
-                                                           settings.custom_classify_basis(), dict_for_standard)
+dict_for_standard = settings.get_dict_for_standard()
 
 # 优化特征的字典
 dict_db_genres = better_dict_genre('Javdb', to_language)
@@ -145,7 +120,7 @@ while input_start_key == '':
                 # endregion
 
                 # region 从javdb获取信息
-                status, javdb = find_jav_html_on_db(jav_file, url_db, proxy_db)
+                status, javdb = find_jav_html_on_db(jav_file, settings.url_db, settings.proxy_db)
                 if status == StatusScrape.db_specified_url_wrong:
                     no_fail += 1
                     record_fail(f'    >第{no_fail}个失败！你指定的javdb网址有错误: {path_relative}\n')
@@ -157,7 +132,7 @@ while input_start_key == '':
                 else:
                     # 成功找到  Status.success
                     pass
-                jav_model, genres_db = re_db(url_db, javdb, proxy_db)
+                jav_model, genres_db = re_db(settings.url_db, javdb, settings.proxy_db)
                 # 优化genres_db
                 try:
                     genres_db = [dict_db_genres[i] for i in genres_db if dict_db_genres[i] != '删除']
@@ -170,7 +145,7 @@ while input_start_key == '':
                 car = jav_model.car
 
                 # region 从javlibrary获取信息
-                status, genres_library = find_jav_html_on_library(jav_file.name_no_ext, jav_model, url_library, proxy_library)
+                status, genres_library = find_jav_html_on_library(jav_file.name_no_ext, jav_model, settings.url_library, settings.proxy_library)
                 if status == StatusScrape.library_specified_url_wrong:
                     no_fail += 1
                     record_fail(f'    >第{no_fail}个失败！你指定的javlibrary网址有错误: {path_relative}\n')
@@ -197,7 +172,7 @@ while input_start_key == '':
                 # endregion
 
                 # region 前往javbus查找【封面】【系列】【特征】
-                status, genres_bus = find_series_cover_genres_bus(jav_model, url_bus, proxy_bus)
+                status, genres_bus = find_series_cover_genres_bus(jav_model, settings.url_bus, settings.proxy_bus)
                 if status == StatusScrape.bus_specified_url_wrong:
                     no_fail += 1
                     record_fail(f'    >第{no_fail}个失败！你指定的javbus网址有错误: {path_relative}\n')
@@ -416,8 +391,7 @@ while input_start_key == '':
 
                 # 7归类影片，针对文件夹【相同】
                 try:
-                    num_temp = classify_folder(jav_file, no_fail, settings, dict_for_standard, list_classify_basis,
-                                               dir_classify_target,
+                    num_temp = classify_folder(jav_file, no_fail, settings, dict_for_standard, dir_classify_target,
                                                dir_current, bool_separate_folder, num_all_episodes)
                     no_fail = num_temp
                 except FileExistsError:

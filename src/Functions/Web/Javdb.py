@@ -137,9 +137,8 @@ def find_jav_html_on_db(jav, url_db, proxy_db):
 
     # 用户没有指定网址，则去搜索
     else:   # https://javdb9.com/video_codes/PKPD
-        list_car = jav.car.split("-")
-        car_pref = list_car[0]
-        car_suf = int(re.search(r'(\d+)\w*', list_car[1]).group(1))
+        car_pref, car_suf = jav.car.split("-")
+        car_suf = int(re.search(r'(\d+)\w*', car_suf).group(1))
         url_car_pref = f'{url_db}/video_codes/{car_pref}'
         html_pref_1 = get_db_html(url_car_pref, proxy_db)
         # uid">PKPD-154</div>
@@ -152,13 +151,13 @@ def find_jav_html_on_db(jav, url_db, proxy_db):
             car_suf_min = int(list_boxs[-1][1])
             # 就在当前页
             if car_suf > car_suf_min:
-                javdb = find_javdb_code(car_suf, url_db, list_boxs)
+                javdb = find_javdb_code(car_suf, list_boxs)
                 if not javdb:
                     return StatusScrape.db_not_found, ''
             elif car_suf == car_suf_min:
                 javdb = list_boxs[-1][0]
             else:    # ?page=3
-                no_page = (car_suf - car_suf_min) % 40
+                no_page = (car_suf - car_suf_min) % 40 + 2
                 url_target_page_n = f'{url_db}/video_codes?page={no_page}'
                 html_pref_n = get_db_html(url_target_page_n, proxy_db)
                 list_boxs_n = re.findall(r'href="/v/(.+?)" class="box" title=".+?"[\s\S]*?uid">\w+-(\d+)[a-z]*</div>',
@@ -166,7 +165,7 @@ def find_jav_html_on_db(jav, url_db, proxy_db):
                 suf_current_min = list_boxs_n[-1][1]
                 suf_current_max = list_boxs_n[0][1]
                 if suf_current_max >= car_suf >= suf_current_min:
-                    javdb = find_javdb_code(car_suf, url_db, list_boxs_n)
+                    javdb = find_javdb_code(car_suf, list_boxs_n)
                     if not javdb:
                         return StatusScrape.db_not_found, ''
                 elif car_suf > suf_current_max:
@@ -174,7 +173,7 @@ def find_jav_html_on_db(jav, url_db, proxy_db):
                     html_pref_m = get_db_html(url_target_page_m, proxy_db)
                     list_boxs_m = re.findall(r'href="/v/(.+?)" class="box" title=".+?"[\s\S]*?uid">\w+-(\d+)[a-z]*</div>',
                                              html_pref_m, re.DOTALL)
-                    javdb = find_javdb_code(car_suf, url_db, list_boxs_m)
+                    javdb = find_javdb_code(car_suf, list_boxs_m)
                     if not javdb:
                         return StatusScrape.db_not_found, ''
                 else:
@@ -183,14 +182,14 @@ def find_jav_html_on_db(jav, url_db, proxy_db):
                     html_pref_o = get_db_html(url_target_page_o, proxy_db)
                     list_boxs_o = re.findall(r'href="/v/(.+?)" class="box" title=".+?"[\s\S]*?uid">\w+-(\d+)[a-z]*</div>',
                                              html_pref_o, re.DOTALL)
-                    javdb = find_javdb_code(car_suf, url_db, list_boxs_o)
+                    javdb = find_javdb_code(car_suf, list_boxs_o)
                     if not javdb:
                         return StatusScrape.db_not_found, ''
     # 得到 javdb
     return StatusScrape.success, javdb
 
 
-def find_javdb_code(car_suf, url_db, list_boxs):
+def find_javdb_code(car_suf, list_boxs):
     javdb = ''
     for box in list_boxs:
         if box[1] == car_suf:

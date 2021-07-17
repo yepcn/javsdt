@@ -106,15 +106,15 @@ def rename_mp4(jav, num_fail, settings, dict_data, list_name_video, path_relativ
 
 
 # 功能：2归类影片，只针对视频文件和字幕文件，无视它们当前所在文件夹
-# 参数：设置settings，归类的目标目录路径dir_classify_target，归类标准组合公式list_classify_basis，命名信息dict_data，处理的影片jav，已失败次数num_fail
+# 参数：设置settings，归类的目标目录路径dir_classify_target，命名信息dict_data，处理的影片jav，已失败次数num_fail
 # 返回：处理的影片jav（所在文件夹路径改变）、已失败次数num_fail
 # 辅助：os.exists, os.rename, os.makedirs，
-def classify_files(jav, num_fail, settings, dict_data, list_classify_basis, dir_classify_target):
+def classify_files(jav, num_fail, settings, dict_data, dir_classify_target):
     # 如果需要归类，且不是针对文件夹来归类
     if settings.bool_classify and not settings.bool_classify_folder:
         # 移动的目标文件夹路径
         dir_dest = f'{dir_classify_target}{sep}'
-        for j in list_classify_basis:
+        for j in settings.list_classify_basis:
             dir_dest = f'{dir_dest}{dict_data[j].rstrip()}'     # 【临时变量】归类的目标文件夹路径    C:\Users\JuneRain\Desktop\测试文件夹\葵司\
         # 还不存在该文件夹，新建
         if not os.path.exists(dir_dest):
@@ -229,7 +229,7 @@ def collect_sculpture(list_actors, dir_current):
 #      归类的目标目录路径dir_classify_target，当前处理的文件夹路径dir_current，命名信息dict_data
 # 返回：处理的影片jav（所在文件夹路径改变）、已失败次数num_fail
 # 辅助：os.exists, os.rename, os.makedirs，
-def classify_folder(jav, num_fail, settings, dict_data, list_classify_basis, dir_classify_target, dir_current, bool_separate_folder, num_all_episodes):
+def classify_folder(jav, num_fail, settings, dict_data, dir_classify_target, dir_current, bool_separate_folder, num_all_episodes):
     if settings.bool_classify and settings.bool_classify_folder and jav.episode == num_all_episodes:  # 需要移动文件夹，且，是该影片的最后一集
         # 用户选择的文件夹是一部影片的独立文件夹，为了避免在这个文件夹里又生成新的归类文件夹
         if bool_separate_folder and dir_classify_target.startswith(dir_current):
@@ -238,7 +238,7 @@ def classify_folder(jav, num_fail, settings, dict_data, list_classify_basis, dir
         # 归类放置的目标文件夹
         dir_dest = f'{dir_classify_target}{sep}'
         # 移动的目标文件夹
-        for j in list_classify_basis:
+        for j in settings.list_classify_basis:
             dir_dest = f'{dir_dest}{dict_data[j].rstrip(" .")}'  # 【临时变量】 文件夹移动的目标上级文件夹  C:\Users\JuneRain\Desktop\测试文件夹\1\葵司\
         dir_new = f'{dir_dest}{sep}{jav.folder}'  # 【临时变量】 文件夹移动的目标路径   C:\Users\JuneRain\Desktop\测试文件夹\1\葵司\【葵司】AVOP-127\
         # print(dir_new)

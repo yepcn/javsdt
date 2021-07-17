@@ -63,7 +63,7 @@ url_bus = settings.get_url_bus()
 to_language, tran_id, tran_sk = settings.get_translate_account()
 
 # 信息字典: 存放影片信息，用于给用户自定义各种命名。
-dict_data = settings.get_dict_data()
+dict_data = settings.get_dict_for_standard()
 
 # nfo中title的写法。
 list_name_nfo_title = settings.formula_name_nfo_title()

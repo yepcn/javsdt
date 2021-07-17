@@ -26,7 +26,10 @@ class Settings(object):
         # 是否 去除 标题 末尾可能存在的演员姓名
         self.bool_strip_actors = True if config_settings.get("收集nfo", "是否去除标题末尾的演员姓名？") == '是' else False
         # 自定义 将系列、片商等元素作为特征，因为emby不会直接在影片介绍页面上显示片商，也不会读取系列set
-        self._custom_genres = config_settings.get("收集nfo", "额外将以下元素添加到特征中")
+        self._custom_genres = config_settings.get("收集nfo", "额外将以下元素添加到特征中").split('、') if config_settings.get("收集nfo",
+                                                                                                              "额外将以下元素添加到特征中") else []
+        # 自定义 将系列、片商等元素作为特征，因为emby不会直接在影片介绍页面上显示片商，也不会读取系列set
+        self._list_extra_genres = [i for i in self._custom_genres if i != '系列' and i != '片商']
         # ？是否将“系列”写入到特征中
         self.bool_write_series = True if '系列' in self._custom_genres else False
         # ？是否将“片商”写入到特征中
@@ -39,11 +42,11 @@ class Settings(object):
         # 是否 重命名 视频
         self.bool_rename_video = True if config_settings.get("重命名影片", "是否重命名影片？") == '是' else False
         # 自定义 重命名 视频
-        self.list_name_fanart = config_settings.get("重命名影片", "重命名影片的格式").split('+')
+        self._list_rename_video = config_settings.get("重命名影片", "重命名影片的格式").split('+')
         # 是否 重命名视频所在文件夹，或者为它创建独立文件夹
         self._bool_rename_folder = True if config_settings.get("修改文件夹", "是否重命名或创建独立文件夹？") == '是' else False
-        # 自定义 新的文件夹名
-        self._custom_folder = config_settings.get("修改文件夹", "新文件夹的格式")
+        # 自定义 新的文件夹名  示例：['车牌', '【', '全部演员', '】']
+        self._list_rename_folder = config_settings.get("修改文件夹", "新文件夹的格式").split('+')
         ########################################################## 归类 ################################################
         # 是否 归类jav
         self.bool_classify = True if config_settings.get("归类影片", "是否归类影片？") == '是' else False
@@ -51,15 +54,15 @@ class Settings(object):
         self.bool_classify_folder = True if config_settings.get("归类影片", "针对文件还是文件夹？") == '文件夹' else False
         # 自定义 路径 归类的jav放到哪
         self._custom_classify_target_dir = config_settings.get("归类影片", "归类的根目录")
-        # 自定义 jav按什么类别标准来归类
+        # 自定义 jav按什么类别标准来归类 比如：影片类型\全部演员
         self._custom_classify_basis = config_settings.get("归类影片", "归类的标准")
         ######################################################## 图片 ################################################
         # 是否 下载图片
         self.bool_jpg = True if config_settings.get("下载封面", "是否下载封面海报？") == '是' else False
         # 自定义 命名 大封面fanart
-        self._custom_fanart = config_settings.get("下载封面", "DVD封面的格式")
+        self.list_name_fanart = config_settings.get("下载封面", "DVD封面的格式").split('+')
         # 自定义 命名 小海报poster
-        self._custom_poster = config_settings.get("下载封面", "海报的格式")
+        self.list_name_poster = config_settings.get("下载封面", "海报的格式").split('+')
         # 是否 如果视频有“中字”，给poster的左上角加上“中文字幕”的斜杠
         self.bool_watermark_subtitle = True if config_settings.get("下载封面", "是否为海报加上中文字幕条幅？") == '是' else False
         # 是否 如果视频是“无码流出”，给poster的右上角加上“无码流出”的斜杠
@@ -115,11 +118,11 @@ class Settings(object):
         # 是否 使用简体中文 简介翻译的结果和jav特征会变成“简体”还是“繁体”
         self.bool_zh = True if config_settings.get("其他设置", "简繁中文？") == '简' else False
         # 网址 javlibrary
-        self._url_library = config_settings.get("其他设置", "javlibrary网址")
+        self.url_library = f'{config_settings.get("其他设置", "javlibrary网址").strip().rstrip("/")}/cn'
         # 网址 javbus
-        self._url_bus = config_settings.get("其他设置", "javbus网址")
+        self.url_bus = config_settings.get("其他设置", "javbus网址").strip().rstrip('/')
         # 网址 javdb
-        self._url_db = config_settings.get("其他设置", "javdb网址")
+        self.url_db = config_settings.get("其他设置", "javdb网址").strip().rstrip('/')
         # 自定义 文件类型 只有列举出的视频文件类型，才会被处理
         self._tuple_video_types = config_settings.get("其他设置", "扫描文件类型").upper().split('、')
         # 自定义 命名格式中“标题”的长度 windows只允许255字符，所以限制长度，但nfo中的标题是全部
@@ -138,18 +141,7 @@ class Settings(object):
         self._ai_ak = config_settings.get("百度人体分析", "api key")
         self._al_sk = config_settings.get("百度人体分析", "secret key")
 
-    # ######################[收集nfo]#####################################
-
-    # 额外放入特征风格中的元素
-    def list_extra_genre(self):
-        list_extra_genres = self._custom_genres.split('、') if self._custom_genres else []  # 需要的额外特征
-        list_extra_genres = [i for i in list_extra_genres if i != '系列' and i != '片商']
-        return list_extra_genres
-
-    # #########################[重命名影片]##############################
-    # 得到视频命名格式list
-    def formula_rename_video(self):
-        return self._custom_video.split('+')
+        self.dict_for_standard, self.list_classify_basis = self.get_dict_for_standard()
 
     # #########################[修改文件夹]##############################
     # 是否需要重命名文件夹或者创建新的文件夹
@@ -165,19 +157,11 @@ class Settings(object):
             else:
                 return False
 
-    # 得到文件夹命名格式list    示例：['车牌', '【', '全部演员', '】']
-    def formula_rename_folder(self):
-        return self._custom_folder.split('+')
-
     # #########################[归类影片]##############################
-    # 功能：检查 归类根目录 的合法性
-    # 参数：用户自定义的归类根目录，用户选择整理的文件夹路径
+    # 功能：如果需要为kodi整理头像，则先检查“演员头像for kodi.ini”、“演员头像”文件夹是否存在; 检查 归类根目录 的合法性
+    # 参数：是否需要整理头像，用户自定义的归类根目录，用户选择整理的文件夹路径
     # 返回：归类根目录路径
-    # 辅助：os.sep，os.system
-    # 功能：如果需要为kodi整理头像，则先检查“演员头像for kodi.ini”、“演员头像”文件夹是否存在
-    # 参数：是否需要整理头像
-    # 返回：无
-    # 辅助：os.path.exists，os.system，shutil.copyfile
+    # 辅助：os.sep，os.path.exists，os.system，shutil.copyfile
     def init_check(self, dir_choose):
         # 检查头像: 如果需要为kodi整理头像，先检查演员头像ini、头像文件夹是否存在。
         if self.bool_sculpture:
@@ -213,19 +197,6 @@ class Settings(object):
         else:
             return ''
 
-    # 归类标准  比如：影片类型\全部演员
-    def custom_classify_basis(self):
-        return self._custom_classify_basis
-
-    # #########################[下载封面]##############################
-    # 命名fanart的格式
-    def formula_name_fanart(self):
-        return self._custom_fanart.split('+')
-
-    # 命名poster的格式
-    def formula_name_poster(self):
-        return self._custom_poster.split('+')
-
     # #########################[原影片文件的性质]##############################
     # 得到代表中字的文字list
     def list_subtitle_word_in_filename(self):
@@ -236,14 +207,6 @@ class Settings(object):
         return self._custom_divulge_words_in_filename.upper().split('、')
 
     # #########################[其他设置]##############################
-    # javlibrary网址，是简体还是繁体
-    def get_url_library(self):
-        return f'{self._url_library.rstrip("/")}/cn'
-
-    # javbus网址
-    def get_url_bus(self):
-        return self._url_bus.rstrip('/')
-
     # jav321网址
     def get_url_321(self):
         if self.bool_zh:
@@ -253,10 +216,6 @@ class Settings(object):
             url_search_321 = 'https://tw.jav321.com/search'
             url_web_321 = 'https://tw.jav321.com'
         return url_search_321, url_web_321
-
-    # javdb网址
-    def get_url_db(self):
-        return self._url_db.rstrip('/')
 
     # #########################[百度翻译API]##############################
     # 百度翻译的目标语言、翻译账户
@@ -274,87 +233,118 @@ class Settings(object):
         else:
             return None
 
-    def get_dict_data(self):
+    # 功能：完善用于命名的dict_data，如果用户自定义的各种命名公式中有dict_data未包含的元素，则添加进dict_data。
+    #      将可能比较复杂的list_classify_basis按“+”“\”切割好，准备用于组装后面的归类路径。
+    # 参数：用户自定义的各种命名公式list
+    # 返回：存储命名信息的dict_data， 切割好的归类标准list_classify_basis
+    # 辅助：os.sep
+    def get_dict_for_standard(self):
         if self._pattern == '无码':
-            return {'车牌': 'CBA-123',
-                    '车牌前缀': 'CBA',
-                    '标题': '无码标题',
-                    '完整标题': '完整无码标题',
-                    '导演': '无码导演',
-                    '制作商': '无码制作商',
-                    '发行商': '无码发行商',
-                    '评分': '0',
-                    '片长': '0',
-                    '系列': '无码系列',
-                    '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
-                    '首个演员': '无码演员', '全部演员': '无码演员',
-                    '空格': ' ',
-                    '\\': sep, '/': sep,  # 文件路径分隔符
-                    '是否中字': '',
-                    '是否流出': '',
-                    '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
-                    '视频': 'CBA-123',  # 当前及未来的视频文件名，不带ext
-                    '原文件名': 'CBA-123', '原文件夹名': 'CBA-123', }
+            dict_for_standard = {'车牌': 'CBA-123',
+                                 '车牌前缀': 'CBA',
+                                 '标题': '无码标题',
+                                 '完整标题': '完整无码标题',
+                                 '导演': '无码导演',
+                                 '制作商': '无码制作商',
+                                 '发行商': '无码发行商',
+                                 '评分': '0',
+                                 '片长': '0',
+                                 '系列': '无码系列',
+                                 '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
+                                 '首个演员': '无码演员', '全部演员': '无码演员',
+                                 '空格': ' ',
+                                 '\\': sep, '/': sep,  # 文件路径分隔符
+                                 '是否中字': '',
+                                 '是否流出': '',
+                                 '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
+                                 '视频': 'CBA-123',  # 当前及未来的视频文件名，不带ext
+                                 '原文件名': 'CBA-123', '原文件夹名': 'CBA-123', }
         elif self._pattern == '素人':
-            return {'车牌': 'XYZ-123',
-                    '车牌前缀': 'XYZ',
-                    '标题': '素人标题',
-                    '完整标题': '完整素人标题',
-                    '导演': '素人导演',
-                    '制作商': '素人制作商',
-                    '发行商': '素人发行商',
-                    '评分': '0',
-                    '片长': '0',
-                    '系列': '素人系列',
-                    '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
-                    '首个演员': '素人演员', '全部演员': '素人演员',
-                    '空格': ' ',
-                    '\\': sep, '/': sep,  # 文件路径分隔符
-                    '是否中字': '',
-                    '是否流出': '',
-                    '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
-                    '视频': 'XYZ-123',  # 当前及未来的视频文件名，不带ext
-                    '原文件名': 'XYZ-123', '原文件夹名': 'XYZ-123', }
+            dict_for_standard = {'车牌': 'XYZ-123',
+                                 '车牌前缀': 'XYZ',
+                                 '标题': '素人标题',
+                                 '完整标题': '完整素人标题',
+                                 '导演': '素人导演',
+                                 '制作商': '素人制作商',
+                                 '发行商': '素人发行商',
+                                 '评分': '0',
+                                 '片长': '0',
+                                 '系列': '素人系列',
+                                 '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
+                                 '首个演员': '素人演员', '全部演员': '素人演员',
+                                 '空格': ' ',
+                                 '\\': sep, '/': sep,  # 文件路径分隔符
+                                 '是否中字': '',
+                                 '是否流出': '',
+                                 '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
+                                 '视频': 'XYZ-123',  # 当前及未来的视频文件名，不带ext
+                                 '原文件名': 'XYZ-123', '原文件夹名': 'XYZ-123', }
         elif self._pattern == 'fc2':
-            return {'车牌': 'FC2-123',
-                    '车牌前缀': 'FC2',
-                    '标题': 'FC2标题',
-                    '完整标题': '完整FC2标题',
-                    '导演': 'FC2导演',
-                    '制作商': 'fc2制作商',
-                    '发行商': 'fc2发行商',
-                    '评分': '0',
-                    '片长': '0',
-                    '系列': 'FC2系列',
-                    '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
-                    '首个演员': 'FC2演员', '全部演员': 'FC2演员',
-                    '空格': ' ',
-                    '\\': sep, '/': sep,  # 文件路径分隔符
-                    '是否中字': '',
-                    '是否流出': '',
-                    '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
-                    '视频': 'FC2-123',  # 当前及未来的视频文件名，不带ext
-                    '原文件名': 'FC2-123', '原文件夹名': 'FC2-123', }
+            dict_for_standard = {'车牌': 'FC2-123',
+                                 '车牌前缀': 'FC2',
+                                 '标题': 'FC2标题',
+                                 '完整标题': '完整FC2标题',
+                                 '导演': 'FC2导演',
+                                 '制作商': 'fc2制作商',
+                                 '发行商': 'fc2发行商',
+                                 '评分': '0',
+                                 '片长': '0',
+                                 '系列': 'FC2系列',
+                                 '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
+                                 '首个演员': 'FC2演员', '全部演员': 'FC2演员',
+                                 '空格': ' ',
+                                 '\\': sep, '/': sep,  # 文件路径分隔符
+                                 '是否中字': '',
+                                 '是否流出': '',
+                                 '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
+                                 '视频': 'FC2-123',  # 当前及未来的视频文件名，不带ext
+                                 '原文件名': 'FC2-123', '原文件夹名': 'FC2-123', }
         else:
-            return {'车牌': 'ABC-123',
-                    '车牌前缀': 'ABC',
-                    '标题': '有码标题',
-                    '完整标题': '完整有码标题',
-                    '导演': '有码导演',
-                    '制作商': '有码制作商',
-                    '发行商': '有码发行商',
-                    '评分': '0',
-                    '片长': '0',
-                    '系列': '有码系列',
-                    '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
-                    '首个演员': '有码演员', '全部演员': '有码演员',
-                    '空格': ' ',
-                    '\\': sep, '/': sep,  # 文件路径分隔符
-                    '是否中字': '',
-                    '是否流出': '',
-                    '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
-                    '视频': 'ABC-123',  # 当前及未来的视频文件名，不带ext
-                    '原文件名': 'ABC-123', '原文件夹名': 'ABC-123', }
+            dict_for_standard = {'车牌': 'ABC-123',
+                                 '车牌前缀': 'ABC',
+                                 '标题': '有码标题',
+                                 '完整标题': '完整有码标题',
+                                 '导演': '有码导演',
+                                 '制作商': '有码制作商',
+                                 '发行商': '有码发行商',
+                                 '评分': '0',
+                                 '片长': '0',
+                                 '系列': '有码系列',
+                                 '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
+                                 '首个演员': '有码演员', '全部演员': '有码演员',
+                                 '空格': ' ',
+                                 '\\': sep, '/': sep,  # 文件路径分隔符
+                                 '是否中字': '',
+                                 '是否流出': '',
+                                 '影片类型': self._av_type,  # 自定义有码、无码、素人、FC2的对应称谓
+                                 '视频': 'ABC-123',  # 当前及未来的视频文件名，不带ext
+                                 '原文件名': 'ABC-123', '原文件夹名': 'ABC-123', }
+        for i in self._list_extra_genres:
+            if i not in dict_for_standard:
+                dict_for_standard[i] = i
+        for i in self._list_rename_video:
+            if i not in dict_for_standard:
+                dict_for_standard[i] = i
+        for i in self._list_rename_folder:
+            if i not in dict_for_standard:
+                dict_for_standard[i] = i
+        for i in self.list_name_nfo_title:
+            if i not in dict_for_standard:
+                dict_for_standard[i] = i
+        for i in self.list_name_fanart:
+            if i not in dict_for_standard:
+                dict_for_standard[i] = i
+        for i in self.list_name_poster:
+            if i not in dict_for_standard:
+                dict_for_standard[i] = i
+        list_classify_basis = []
+        for i in self._custom_classify_basis.split('\\'):
+            for j in i.split('+'):
+                if j not in dict_for_standard:
+                    dict_for_standard[j] = j
+                list_classify_basis.append(j)
+            list_classify_basis.append(sep)
+        return dict_for_standard, list_classify_basis
 
     def get_dict_subtitle_file(self, list_sub_files, list_suren_cars):
         dict_subtitle_file = {}

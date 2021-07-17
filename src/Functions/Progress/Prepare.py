@@ -4,38 +4,6 @@ import os
 from xml.etree.ElementTree import parse, ParseError
 
 
-# 功能：完善用于命名的dict_data，如果用户自定义的各种命名公式中有dict_data未包含的元素，则添加进dict_data。
-#      将可能比较复杂的list_classify_basis按“+”“\”切割好，准备用于组装后面的归类路径。
-# 参数：用户自定义的各种命名公式list
-# 返回：存储命名信息的dict_data， 切割好的归类标准list_classify_basis
-# 辅助：os.sep
-def perfect_dict_data(list_extra_genres, list_rename_video, list_rename_folder, list_name_nfo_title, list_name_fanart, list_name_poster, custom_classify_basis, dict_for_standard):
-    for i in list_extra_genres:
-        if i not in dict_for_standard:
-            dict_for_standard[i] = i
-    for i in list_rename_video:
-        if i not in dict_for_standard:
-            dict_for_standard[i] = i
-    for i in list_rename_folder:
-        if i not in dict_for_standard:
-            dict_for_standard[i] = i
-    for i in list_name_nfo_title:
-        if i not in dict_for_standard:
-            dict_for_standard[i] = i
-    for i in list_name_fanart:
-        if i not in dict_for_standard:
-            dict_for_standard[i] = i
-    for i in list_name_poster:
-        if i not in dict_for_standard:
-            dict_for_standard[i] = i
-    list_classify_basis = []
-    for i in custom_classify_basis.split('\\'):
-        for j in i.split('+'):
-            if j not in dict_for_standard:
-                dict_for_standard[j] = j
-            list_classify_basis.append(j)
-        list_classify_basis.append(sep)
-    return dict_for_standard, list_classify_basis
 
 
 # 功能：根据【原文件名】和《已存在的、之前整理的nfo》，判断当前jav是否有“中文字幕”
