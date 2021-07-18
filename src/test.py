@@ -9,5 +9,5 @@ def change_dict(dict):
     dict['A'] = 'B'
 
 dict = {'A': 'S', }
-# change_dict(dict)
+change_dict(dict)
 print(dict)

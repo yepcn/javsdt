@@ -128,17 +128,3 @@ def find_car_fc2(file):
     subtitle_carg = re.search(r'FC2[^\d]*(\d+)', file_temp)  # 匹配字幕车牌
     if subtitle_carg:
         subtitle_car = f'FC2-{subtitle_carg.group(1)}'
-
-# 功能：得到素人车牌集合
-# 参数：无
-# 返回：素人车牌list
-# 辅助：无
-def list_suren_car():
-    try:
-        with open('StaticFiles/【素人车牌】.txt', 'r', encoding="utf-8") as f:
-            list_suren_cars = list(f)
-    except:
-        input('【素人车牌】.txt读取失败！停止工作！')
-    list_suren_cars = [i.strip().upper() for i in list_suren_cars if i != '\n']
-    # print(list_suren_cars)
-    return list_suren_cars

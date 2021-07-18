@@ -120,20 +120,18 @@ def get_db_html(url, proxy):
     os.system('pause')
 
 
-def find_jav_html_on_db(jav, url_db, proxy_db):
+def scrape_from_db(jav, url_db, proxy_db):
     # 用户指定了网址，则直接得到jav所在网址
     if '仓库' in jav.name:
         url_appointg = re.search(r'仓库(\w+?)', jav.name)
         if url_appointg:
             jdvdb = url_appointg
             html_jav_db = get_db_html(f'{url_db}/v/{jdvdb}', proxy_db)
-            if not re.search(r'頁面未找到', html_jav_db):
-                return StatusScrape.success, jdvdb
-            else:
-                return StatusScrape.db_specified_url_wrong, ''
+            if re.search(r'頁面未找到', html_jav_db):
+                return StatusScrape.db_specified_url_wrong, None, []
         else:
             # 指定的javlibrary网址有错误
-            return StatusScrape.db_specified_url_wrong, ''
+            return StatusScrape.db_specified_url_wrong, None, []
 
     # 用户没有指定网址，则去搜索
     else:   # https://javdb9.com/video_codes/PKPD
@@ -146,14 +144,14 @@ def find_jav_html_on_db(jav, url_db, proxy_db):
                                html_pref_1, re.DOTALL)
         # 没有该车牌的codes页面
         if not list_boxs:
-            return StatusScrape.db_not_found, ''
+            return StatusScrape.db_not_found, None, []
         else:
             car_suf_min = int(list_boxs[-1][1])
             # 就在当前页
             if car_suf > car_suf_min:
                 javdb = find_javdb_code(car_suf, list_boxs)
                 if not javdb:
-                    return StatusScrape.db_not_found, ''
+                    return StatusScrape.db_not_found, None, []
             elif car_suf == car_suf_min:
                 javdb = list_boxs[-1][0]
             else:    # ?page=3
@@ -167,7 +165,7 @@ def find_jav_html_on_db(jav, url_db, proxy_db):
                 if suf_current_max >= car_suf >= suf_current_min:
                     javdb = find_javdb_code(car_suf, list_boxs_n)
                     if not javdb:
-                        return StatusScrape.db_not_found, ''
+                        return StatusScrape.db_not_found, None, []
                 elif car_suf > suf_current_max:
                     url_target_page_m = f'{url_db}/v/{no_page - 1}'
                     html_pref_m = get_db_html(url_target_page_m, proxy_db)
@@ -175,7 +173,7 @@ def find_jav_html_on_db(jav, url_db, proxy_db):
                                              html_pref_m, re.DOTALL)
                     javdb = find_javdb_code(car_suf, list_boxs_m)
                     if not javdb:
-                        return StatusScrape.db_not_found, ''
+                        return StatusScrape.db_not_found, None, []
                 else:
                     # car_suf < car_suf_current_min:
                     url_target_page_o = f'{url_db}/v/{no_page + 1}'
@@ -184,27 +182,16 @@ def find_jav_html_on_db(jav, url_db, proxy_db):
                                              html_pref_o, re.DOTALL)
                     javdb = find_javdb_code(car_suf, list_boxs_o)
                     if not javdb:
-                        return StatusScrape.db_not_found, ''
+                        return StatusScrape.db_not_found, None, []
     # 得到 javdb
-    return StatusScrape.success, javdb
-
-
-def find_javdb_code(car_suf, list_boxs):
-    javdb = ''
-    for box in list_boxs:
-        if box[1] == car_suf:
-            javdb = box[0]
-    return javdb
-
-
-def re_db(url_db, javdb, proxy_db):
+    # return StatusScrape.success, javdb
     url_jav_db = f'{url_db}/v/{javdb}'
     print('    >获取信息：', url_jav_db)
     html_jav_db = get_db_html(url_jav_db, proxy_db)
     # <title> BKD-171 母子交尾 ～西会津路～ 中森いつき | JavDB 成人影片資料庫及磁鏈分享 </title>
     car_title = re.search(r'title> (.+?) | JavDB', html_jav_db).group(1)
     list_car_title = car_title.split(' ', 1)
-    jav_model = JavModel(list_car_title[0])   # 围绕该jav的所有信息
+    jav_model = JavModel(list_car_title[0])  # 围绕该jav的所有信息
     jav_model.Title = list_car_title[1]
     jav_model.Javdb = javdb
     # 带着主要信息的那一块 複製番號" data-clipboard-text="BKD-171">
@@ -229,11 +216,19 @@ def re_db(url_db, javdb, proxy_db):
     jav_model.Publisher = publisherg.group(1) if publisherg else ''
     # star gray"></i></span>&nbsp;3.75分
     scoreg = re.search(r'star gray"></i></span>&nbsp;(.+?)分', html_jav_db)
-    jav_model.Score = int(float(scoreg.group(1)) * 20)  if scoreg else 0
+    jav_model.Score = int(float(scoreg.group(1)) * 20) if scoreg else 0
     # 演员们 /actors/M0xA">上川星空</a>  actors/P9mN">希美まゆ</a><strong class="symbol female
     actors = re.findall(r'actors/.+?">(.+?)</a><strong class="symbol female', html_jav_db)
     jav_model.Actors = [i.strip() for i in actors]
     print('    >演员：', actors)
     # 特征 /tags?c7=8">精选、综合</a>
     genres_db = re.findall(r'tags.+?">(.+?)</a>', html_jav_db)
-    return jav_model, genres_db
+    return StatusScrape.success, jav_model, genres_db
+
+
+def find_javdb_code(car_suf, list_boxs):
+    javdb = ''
+    for box in list_boxs:
+        if box[1] == car_suf:
+            javdb = box[0]
+    return javdb

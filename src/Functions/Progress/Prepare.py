@@ -1,57 +1,26 @@
 # -*- coding:utf-8 -*-
 from os import sep
 import os
+from shutil import copyfile
 from xml.etree.ElementTree import parse, ParseError
 
 
 
-
-# 功能：根据【原文件名】和《已存在的、之前整理的nfo》，判断当前jav是否有“中文字幕”
-# 参数：①当前jav所处文件夹路径dir_current ②jav文件名不带格式后缀name_no_ext，
-#      ③如果【原文件名】包含list_subtitle_character中的元素即判断有“中文字幕”,
-# 返回：True
-# 辅助：os.path.exists，xml.etree.ElementTree.parse，xml.etree.ElementTree.ParseError
-def judge_exist_subtitle(dir_current, name_no_ext, list_subtitle_character):
-    # 去除 '-CD' 和 '-CARIB'对 '-C'判断中字的影响
-    name_no_ext = name_no_ext.upper().replace('-CD', '').replace('-CARIB', '')
-    # 如果原文件名包含“-c、-C、中字”这些字符
-    for i in list_subtitle_character:
-        if i in name_no_ext:
-            return True
-    # 先前整理过的nfo中有 ‘中文字幕’这个Genre
-    path_old_nfo = f'{dir_current}{sep}{name_no_ext}.nfo'
-    if os.path.exists(path_old_nfo):
-        try:
-            tree = parse(path_old_nfo)
-        except ParseError:  # nfo可能损坏
-            return False
-        for child in tree.getroot():
-            if child.text == '中文字幕':
-                return True
-    return False
-
-
-# 功能：根据【原文件名】和《已存在的、之前整理的nfo》，判断当前jav是否有“无码流出”
-# 参数：①当前jav所处文件夹路径dir_current ②jav文件名不带格式后缀name_no_ext，
-#      ③如果【原文件名】包含list_divulge_character中的元素即判断有“中文字幕”,
-# 返回：True
-# 辅助：os.path.exists，xml.etree.ElementTree.parse，xml.etree.ElementTree.ParseError
-def judge_exist_divulge(dir_current, name_no_ext, list_divulge_character):
-    # 如果原文件名包含“-c、-C、中字”这些字符
-    for i in list_divulge_character:
-        if i in name_no_ext:
-            return True
-    # 先前整理过的nfo中有 ‘中文字幕’这个Genre
-    path_old_nfo = f'{dir_current}{sep}{name_no_ext}.nfo'
-    if os.path.exists(path_old_nfo):
-        try:
-            tree = parse(path_old_nfo)
-        except ParseError:  # nfo可能损坏
-            return False
-        for child in tree.getroot():
-            if child.text == '无码流出':
-                return True
-    return False
+# 功能：如果需要为kodi整理头像，则先检查“演员头像for kodi.ini”、“演员头像”文件夹是否存在; 检查 归类根目录 的合法性
+# 参数：是否需要整理头像，用户自定义的归类根目录，用户选择整理的文件夹路径
+# 返回：归类根目录路径
+# 辅助：os.sep，os.path.exists，shutil.copyfile
+def check_actors(self):
+    # 检查头像: 如果需要为kodi整理头像，先检查演员头像ini、头像文件夹是否存在。
+    if self.bool_sculpture:
+        if not os.path.exists('演员头像'):
+            input('\n“演员头像”文件夹丢失！请把它放进exe的文件夹中！\n')
+        if not os.path.exists('【缺失的演员头像统计For Kodi】.ini'):
+            if os.path.exists('actors_for_kodi.ini'):
+                copyfile('actors_for_kodi.ini', '【缺失的演员头像统计For Kodi】.ini')
+                print('\n“【缺失的演员头像统计For Kodi】.ini”成功！')
+            else:
+                input('\n请打开“【ini】重新创建ini.exe”创建丢失的程序组件!')
 
 
 def judge_subtitle_and_divulge(jav_file, settings, dict_for_user, dir_current, list_subtitle_words_in_filename, list_divulge_words_in_filename):
@@ -66,4 +35,19 @@ def judge_subtitle_and_divulge(jav_file, settings, dict_for_user, dir_current, l
     bool_divulge = judge_exist_divulge(dir_current, jav_file.name_no_ext, list_divulge_words_in_filename)
     dict_for_user['是否流出'] = settings.custom_divulge_expression if bool_divulge else ''
     return bool_subtitle, bool_divulge
+
+
+# 功能：得到素人车牌集合
+# 参数：无
+# 返回：素人车牌list
+# 辅助：无
+def get_suren_cars():
+    try:
+        with open('StaticFiles/【素人车牌】.txt', 'r', encoding="utf-8") as f:
+            list_suren_cars = list(f)
+    except:
+        input('【素人车牌】.txt读取失败！')
+    list_suren_cars = [i.strip().upper() for i in list_suren_cars if i != '\n']
+    # print(list_suren_cars)
+    return list_suren_cars
 

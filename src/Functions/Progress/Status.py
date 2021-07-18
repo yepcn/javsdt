@@ -30,9 +30,9 @@ def judge_exist_extra_folders(list_folders):
 #      len_list_jav_struct当前所处文件夹包含的、需要整理的jav的结构体数量, list_sub_dirs当前所处文件夹包含的子文件夹们
 # 返回：True
 # 辅助：judge_exist_extra_folders
-def judge_separate_folder(len_dict_car_pref, sum_videos_include, len_list_jav_struct, list_sub_dirs):
+def judge_separate_folder(len_dict_car_pref, sum_videos_include, len_list_jav_files, list_sub_dirs):
     # 当前文件夹下，车牌不止一个；还有其他非jav视频；有其他文件夹，除了演员头像文件夹“.actors”和额外剧照文件夹“extrafanart”；
-    if len_dict_car_pref > 1 or sum_videos_include > len_list_jav_struct or judge_exist_extra_folders(list_sub_dirs):
+    if len_dict_car_pref > 1 or sum_videos_include > len_list_jav_files or judge_exist_extra_folders(list_sub_dirs):
         return False  # 不是独立的文件夹
     else:
         return True  # 这一层文件夹是这部jav的独立文件夹

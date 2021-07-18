@@ -36,19 +36,19 @@ def get_library_html(url, proxy):
 
 
 # 返回: Status, html_jav_library
-def find_jav_html_on_library(file_name, jav_model, url_library, proxy_library):
+def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
     html_jav_library = ''
     # 用户指定了网址，则直接得到jav所在网址
-    if '图书馆' in jav.name:
-        url_appointg = re.search(r'图书馆(jav.+?)\.', jav.name)
+    if '图书馆' in jav_file.name:
+        url_appointg = re.search(r'图书馆(jav.+?)\.', jav_file.name)
         if url_appointg:
             url_search = f'{url_library}/?v={url_appointg.group(1)}'
         else:
             # 指定的javlibrary网址有错误
-            return StatusScrape.specified_library_url_wrong, html_jav_library
+            return StatusScrape.specified_library_url_wrong, []
     # 用户没有指定网址，则去搜索
     else:
-        url_search = f'{url_library}/vl_searchbyid.php?keyword={jav.car}'
+        url_search = f'{url_library}/vl_searchbyid.php?keyword={jav_file.car}'
     print(f'    >搜索车牌: {url_search}')
     # 得到javlibrary搜索网页html
     html_search_library = get_library_html(url_search, proxy_library)
@@ -59,7 +59,6 @@ def find_jav_html_on_library(file_name, jav_model, url_library, proxy_library):
     # 搜索结果就是AV的页面。事实上，现在只有用户指定了网址，这一步判定才能成功。现在要么是多个搜索结果的网页，要么是跳转前的几句html语句，根本不可能“搜索一下就是AV的页面”。
     if titleg:
         html_jav_library = html_search_library
-        return StatusScrape.success, html_jav_library
     # 第二种情况: 搜索结果可能是两个以上，所以这种匹配找不到标题，None！
     else:  # 找“可能是多个结果的网页”上的所有“box”
         # 这个正则表达式可以忽略avop-00127bod，它是近几年重置的，信息冗余
@@ -77,28 +76,26 @@ def find_jav_html_on_library(file_name, jav_model, url_library, proxy_library):
                 if list_search_results[0][1].endswith('ク）'):
                     url_jav = f'{url_library}/?v=jav{list_search_results[1][0]}'
                 # 不同的片，但车牌完全相同，比如id-020。警告用户，但默认用第一个结果。
-                elif list_search_results[1][1].split(' ', 1)[0] == jav.car:
+                elif list_search_results[1][1].split(' ', 1)[0] == jav_file.car:
                     # 搜索到同车牌的不同视频
                     status = StatusScrape.library_multiple_search_results
                 # else: 还有一种情况，不同片，车牌也不同，但搜索到一堆，比如搜“AVOP-039”，还会得到“AVOP-390”，正确的肯定是第一个。
             # 打开这个jav在library上的网页
             print(f'    >获取信息: {url_jav}')
             html_jav_library = get_library_html(url_jav, proxy_library)
-            return status, html_jav_library
         # 第三种情况: 搜索不到这部影片，搜索结果页面什么都没有
         else:
-            return StatusScrape.library_not_found, html_jav_library
+            return StatusScrape.library_not_found, []
     # javlibrary的精彩影评   (.+?\s*.*?\s*.*?\s*.*?) 下面的匹配可能很奇怪，没办法，就这么奇怪
     review = ''
-    if settings.bool_review:
-        list_all_reviews = re.findall(
-            r'(textarea style="display: none;" class="hidden">[\s\S]*?scoreup">\d\d+)', html_jav_library, re.DOTALL)
-        if list_all_reviews:
-            for rev in list_all_reviews:
-                list_reviews = re.findall(r'hidden">([\s\S]*?)</textarea>', rev, re.DOTALL)
-                if list_reviews:
-                    review = f'{review}{list_reviews[-1]}////'
-            review = review.replace('\n', '').replace('\t', '').replace('\r', '').rstrip()
+    list_all_reviews = re.findall(
+        r'(textarea style="display: none;" class="hidden">[\s\S]*?scoreup">\d\d+)', html_jav_library, re.DOTALL)
+    if list_all_reviews:
+        for rev in list_all_reviews:
+            list_reviews = re.findall(r'hidden">([\s\S]*?)</textarea>', rev, re.DOTALL)
+            if list_reviews:
+                review = f'{review}{list_reviews[-1]}////'
+        review = review.replace('\n', '').replace('\t', '').replace('\r', '').rstrip()
     jav_model.Review = review
     # print(review)
     # 有大部分信息的html_jav_library
@@ -140,6 +137,6 @@ def find_jav_html_on_library(file_name, jav_model, url_library, proxy_library):
         if scoreg:
             jav_model.Score = int(float(scoreg.group(1)) * 10)
     # 特点风格
-    genres = re.findall(r'category tag">(.+?)<', html_jav_library)
-    return jav_model, genres
+    genres_library = re.findall(r'category tag">(.+?)<', html_jav_library)
+    return StatusScrape.success, genres_library
 

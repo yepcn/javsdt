@@ -15,6 +15,10 @@ class JavFile(object):
         self.subtitle = subtitle                           # 字幕文件名  ABC-123.srt；会在重命名过程中发生变化
         self.ext_subtitle = splitext(subtitle)[1].lower()  # 字幕扩展名  .srt
         self.number = num_current                          # 当前处理的视频在所有视频中的编号，整理进度
+        self.is_subtitle = False                           # 拥有字幕
+        self.is_divulge = False                            # 是无码流出
+        self.is_in_separate_folder = False                 # 拥有独立文件夹
+
 
     # 所在文件夹名称
     @property
