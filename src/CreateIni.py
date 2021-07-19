@@ -91,9 +91,7 @@ try:
     config_actor.set("说明", "上面的“演员姓名 = N(次数)”的表达式", "后面的N数字表示你有N部(次)影片都在找她的头像，可惜找不到")
     config_actor.set("说明", "你可以去保存一下她的头像jpg到“演员头像”文件夹", "以后就能保存她的头像到影片的文件夹了")
     config_actor.write(open('actors_for_kodi.ini', "w", encoding='utf-8-sig'))
-    print('    >“actors_for_kodi.ini”重写成功！')
-    system('pause')
+    input('    >“actors_for_kodi.ini”重写成功！')
 except:
     print(format_exc())
-    print('\n创建ini失败，解决上述问题后，重新打开exe创建ini！')
-    system('pause')
+    input('\n创建ini失败，解决上述问题后，重新打开exe创建ini！')

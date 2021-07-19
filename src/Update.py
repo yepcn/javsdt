@@ -8,8 +8,7 @@ upd_url = 'https://github.com/junerain123/javsdt/blob/master/%E6%A3%80%E6%9F%A5%
 try:
     rqs = requests.get(upd_url, timeout=20)
 except:
-    print('连接github超时！请重新尝试！')
-    os.system('pause')
+    input('连接github超时！请重新尝试！')
 rqs.encoding = 'utf-8'
 html_github_update = rqs.text
 # print(html_github_update)
@@ -23,4 +22,4 @@ if now_version != new_version:
     print('下载链接为：', new_download, '！')
 else:
     print('你正在使用最新的版本，无需更新！')
-os.system('pause')
+input("结束！")

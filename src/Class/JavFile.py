@@ -8,17 +8,19 @@ class JavFile(object):
     def __init__(self, file_raw, dir_current, car, episode, subtitle, num_current):
         self.car = car                                     # 车牌
         self.pref = car.split('-')[0]                      # 车牌前缀
-        self.name = file_raw                               # 完整文件名 ABC-123.mp4；会在重命名过程中发生变化
+        self.name = file_raw                               # 完整文件名 ABC-123-cd2.mp4；会在重命名过程中发生变化
         self.ext = splitext(file_raw)[1].lower()           # 视频文件扩展名 .mp4
         self.dir = dir_current                             # 视频所在文件夹的路径；会在重命名过程中发生变化
         self.episode = episode                             # 第几集 cd1 cd2 cd3
         self.subtitle = subtitle                           # 字幕文件名  ABC-123.srt；会在重命名过程中发生变化
         self.ext_subtitle = splitext(subtitle)[1].lower()  # 字幕扩展名  .srt
-        self.number = num_current                          # 当前处理的视频在所有视频中的编号，整理进度
+        self.no = num_current                              # 当前处理的视频在所有视频中的编号，整理进度
         self.is_subtitle = False                           # 拥有字幕
         self.is_divulge = False                            # 是无码流出
-        self.is_in_separate_folder = False                 # 拥有独立文件夹
+        self.cd = ''                                       # 多cd，如果有两集，第一集cd1.第二集cd2；如果只有一集，为空
 
+    # 类属性
+    is_in_separate_folder = False         # 是否拥有独立文件夹
 
     # 所在文件夹名称
     @property

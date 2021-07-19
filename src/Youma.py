@@ -4,8 +4,10 @@ from shutil import copyfile
 from traceback import format_exc
 # ################################################# 相同 ###########################################################
 from Class.Settings import Settings
-from EnumStatus import StatusScrape
+from MyEnum import ScrapeStatusEnum
 from Class.Logger import Logger
+from JavFile import JavFile
+from JavModel import JavModel
 from Status import judge_exist_nfo, judge_separate_folder
 from User import choose_directory
 from Standard import rename_mp4, rename_folder, classify_files, classify_folder, prefect_jav_model_and_dict_for_standard
@@ -20,102 +22,103 @@ from Functions.Web.Arzon import steal_arzon_cookies, find_plot_arzon
 from Functions.Web.Javbus import find_series_cover_genres_bus
 
 #  main开始
-from Javdb import scrape_from_db, re_db
+from Javdb import scrape_from_db
 from Javlibrary import scrape_from_library
 
-print('1、避开夜晚高峰期，访问javlibrary和arzon很慢。\n'
-      '2、若一直打不开javlibrary，请在ini中更新防屏蔽网址\n')
+print('1、避开高峰期，整理速度可能很慢。\n'
+      '2、若一直打不开网站，请在ini中更新对应网址\n')
 
-# 读取配置文件，这个ini文件用来给用户设置
+# region（1）读取配置文件
 print('正在读取ini中的设置...', end='')
 try:
     settings = Settings('有码')
 except:
     settings = None
     print(format_exc())
-    print('\n无法读取ini文件，请修改它为正确格式，或者打开“【ini】重新创建ini.exe”创建全新的ini！')
-    os.system('pause')
+    input('\n无法读取ini文件，请修改它为正确格式，或者打开“【ini】重新创建ini.exe”创建全新的ini！')
 print('\n读取ini文件成功!\n')
+# endregion
 
+# region（2）准备全局参数
 # 路径分隔符: 当前系统的路径分隔符 windows是“\”，linux和mac是“/”
 sep = os.sep
-
-# arzon通行证: 如果需要在nfo中写入日语简介，需要先获得合法的arzon网站的cookie，用于通过成人验证。
+# arzon通行证: 如果需要从arzon获取日语简介，需要先获得合法的arzon网站的cookie，用于通过成人验证。
 cookie_arzon = steal_arzon_cookies(settings.proxy_arzon) if settings.bool_nfo else {}
-
-# 完善dict_data，如果用户自定义了一些文字，不在元素中，需要将它们添加进dict_data；list_classify_basis，归类标准，归类目标文件夹的组成公式。
+# 给用户自定义命名的字典。
 dict_for_standard = settings.get_dict_for_standard()
-
 # 优化特征的字典
 dict_db_genres = better_dict_genre('Javdb', settings.to_language)
 dict_library_genres = better_dict_genre('Javlibrary', settings.to_language)
 dict_bus_genres = better_dict_genre('Javbus', settings.to_language)
+# endregion
 
+# region（3）整理程序
 # 用户输入“回车”就继续选择文件夹整理
-input_start_key = ''
-while input_start_key == '':
+input_key = ''
+while input_key == '':
 
+    # region （3.1）用户选择需整理的文件夹，校验归类的目标文件夹的合法性
     # 用户: 选择需要整理的文件夹
     dir_choose = choose_directory()
     # 日志: 在txt中记录一下用户的这次操作，在某个时间选择了某个文件夹
-    logger = Logger()  # 用于记录失败次数
+    logger = Logger()  # 用于记录失败次数、失败信息
     logger.record_start(dir_choose)
     # 归类: 用户自定义的归类根目录，如果不需要归类则为空
     settings.check_classify_target_directory(dir_choose)
-    # 用于展示进度
-    no_current = 0  # 当前视频的编号
-    sum_all_videos = settings.count_num_videos(dir_choose)  # 所选文件夹总共有多少个视频文件
+    # endregion
 
+    # region （3.2）遍历所选文件夹内部进行处理
+    no_current = 0  # 当前视频（包括非jav）的编号，用于显示进度、获取最大视频编号即当前文件夹内视频数量
     print('...文件扫描开始...如果时间过长...请避开高峰期...\n')
-    # dir_current【当前所处文件夹】 list_sub_dirs【子文件夹们】 list_sub_files【子文件们】
+    # dir_current【当前所处文件夹】，由浅及深遍历每一层文件夹，list_sub_dirs【子文件夹们】 list_sub_files【子文件们】
     for dir_current, list_sub_dirs, list_sub_files in os.walk(dir_choose):
-        # 什么文件都没有
-        if not list_sub_files:
-            continue
-        # 当前directory_current是已归类的目录，无需处理
-        dir_current_relative = dir_current[len(dir_choose):]  # 当前所处文件夹 相对于 所选文件夹 的路径，用于报错
-        if '归类完成' in dir_current_relative:
-            continue
-        # 跳过已存在nfo的文件夹，判断这一层文件夹中有没有nfo
-        if settings.bool_skip and judge_exist_nfo(list_sub_files):
+
+        # region （3.2.1）当前文件夹内包含jav及字幕文件的状况：有多少视频，其中多少jav，同一车牌多少cd，当前文件夹是不是独立文件夹
+        # （3.2.1.1）当前所处文件夹 相对于 所选文件夹 的路径，主要用于报错
+        dir_current_relative = dir_current[len(dir_choose):]
+        # 什么文件都没有 | dir_current是已归类的目录，无需处理 | 跳过已存在nfo的文件夹，判断这一层文件夹中有没有nfo
+        if not list_sub_files \
+                or '归类完成' in dir_current_relative \
+                or (settings.bool_skip and judge_exist_nfo(list_sub_files)):
             continue
 
-        # region 对这一层文件夹进行评估,有多少视频，有多少同车牌视频，是不是独立文件夹
-        # 判断文件是不是字幕文件，放入dict_subtitle_file中，jav的字幕文件和车牌对应关系 {'c:\a\abc_123.srt': 'abc-123'}
+        # （3.2.1.2）判断文件是不是字幕文件，放入dict_subtitle_file中，字幕文件和车牌对应关系 {'c:\a\abc_123.srt': 'abc-123'}
         dict_subtitle_file = settings.get_dict_subtitle_file(list_sub_files)
-        # list_jav_files 存放: 需要整理的jav文件对象;
-        list_jav_files, dict_car_episode = settings.get_list_jav_files(list_sub_files, no_current, dict_subtitle_file,
-                                                                       dir_current, dir_current_relative)
-        #  dict_car_episode存放: 每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
+        # （3.2.1.3）获取当前所处文件夹，子一级内，包含的jav，放入list_jav_files 存放: 需要整理的jav文件对象jav_file;
+        list_jav_files, dict_car_episode, no_current = settings.get_list_jav_files(list_sub_files, no_current,
+                                                                                   dict_subtitle_file,
+                                                                                   dir_current,
+                                                                                   dir_current_relative)
+        # dict_car_episode存放: 每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
+        # （3.2.1.4）没有jav，则跳出当前所处文件夹
+        if not list_jav_files:
+            continue
+        # （3.2.1.5）判定当前所处文件夹是否是独立文件夹，独立文件夹是指该文件夹仅用来存放该影片，而不是大杂烩文件夹，是后期移动剪切操作的重要依据
+        JavFile.is_in_separate_folder = judge_separate_folder(len(dict_car_episode), no_current,
+                                                              len(list_jav_files), list_sub_dirs)
+        # is_in_separate_folder是类属性，不是实例属性，修改类属性会将list_jav_files中的所有jav_file的is_in_separate_folder同步
+        # （3.2.1.6）所选文件夹总共有多少个视频文件，包括非jav文件，主要用于显示进度
+        sum_all_videos = settings.count_num_videos(dir_choose)
         # endregion
 
-        # 判定影片所在文件夹是否是独立文件夹，独立文件夹是指该文件夹仅用来存放该影片，而不是大杂烩文件夹
-        # 这一层文件夹下有jav
-        if dict_car_episode:
-            bool_separate_folder = judge_separate_folder(len(dict_car_episode), no_current, len(list_jav_files),
-                                                         list_sub_dirs)
-        else:
-            continue
-
-        # 开始处理每一部jav
+        # region（3.2.2）开始处理每一部jav文件
         for jav_file in list_jav_files:
-
             try:
-
-                # region 准备工作
-                path_relative = jav_file.path[len(dir_choose):]  # 影片的相对于所选文件夹的路径，用于报错
+                # region（3.2.2.1）准备工作
                 # 当前进度
-                print(f'>> [{jav_file.number}/{sum_all_videos}]:{jav_file.name}')
+                print(f'>> [{jav_file.no}/{sum_all_videos}]:{jav_file.name}')
                 print(f'    >发现车牌: {jav_file.car}')
+                jav_model = JavModel(jav_file.car)
+                logger.path_relative = jav_file.path[len(dir_choose):]  # 影片的相对于所选文件夹的路径，用于报错
                 # endregion
 
-                # region 从javdb获取信息
-                status, jav_model, genres_db = scrape_from_db(jav_file, settings.url_db, settings.proxy_db)
-                if status == StatusScrape.db_specified_url_wrong:
-                    logger.record_fail(f'你指定的javdb网址有错误: {path_relative}\n')
+                # region（3.2.2.2）从javdb获取信息
+                status, genres_db = scrape_from_db(jav_file, jav_model, settings.url_db, settings.proxy_db)
+                if status == ScrapeStatusEnum.db_specified_url_wrong:
+                    logger.record_fail(f'你指定的javdb网址有错误: ')
                     continue  # 结束对该jav的整理
-                elif status == StatusScrape.db_not_found:
-                    logger.record_fail(f'javdb找不到该车牌的信息: {jav_file.car}，{path_relative}\n')
+                elif status == ScrapeStatusEnum.db_not_found:
+                    logger.record_fail(f'javdb找不到该车牌的信息: {jav_file.car}，')
                     continue  # 结束对该jav的整理
                 # 优化genres_db
                 try:
@@ -125,38 +128,37 @@ while input_start_key == '':
                     continue  # 结束对该jav的整理
                 # endregion
 
-                car = jav_model.car
+                car = jav_model.Car
 
-                # region 从javlibrary获取信息
+                # region（3.2.2.3）从javlibrary获取信息
                 status, genres_library = scrape_from_library(jav_file, jav_model, settings.url_library,
                                                              settings.proxy_library)
-                if status == StatusScrape.library_specified_url_wrong:
-                    logger.record_fail(f'你指定的javlibrary网址有错误: {path_relative}\n')
+                if status == ScrapeStatusEnum.library_specified_url_wrong:
+                    logger.record_fail(f'你指定的javlibrary网址有错误: ')
                     continue  # 结束对该jav的整理
-                elif status == StatusScrape.library_not_found:
-                    logger.record_fail(f'javlibrary找不到该车牌的信息: {jav_file.car}，{path_relative}\n')
+                elif status == ScrapeStatusEnum.library_not_found:
+                    logger.record_fail(f'javlibrary找不到该车牌的信息: {jav_file.car}，')
                     continue  # 结束对该jav的整理
-                elif status == StatusScrape.library_multiple_search_results:
+                elif status == ScrapeStatusEnum.library_multiple_search_results:
                     bool_unique = False
-                    logger.record_fail(f'javlibrary搜索到同车牌的不同视频: {jav_file.car}，{path_relative}\n')
+                    logger.record_fail(f'javlibrary搜索到同车牌的不同视频: {jav_file.car}，')
                 # 优化genres_library
                 try:
                     genres_library = [dict_library_genres[i] for i in genres_library if dict_library_genres[i] != '删除']
                 except KeyError as error:
                     logger.record_fail(f'发现新的javlibrary特征需要添加至【特征对照表】，另请告知作者: {error}\n')
                     continue  # 结束对该jav的整理
-                # print(genres_library)
                 # endregion
 
-                # region 前往javbus查找【封面】【系列】【特征】
+                # region（3.2.2.4）前往javbus查找【封面】【系列】【特征】
                 status, genres_bus = find_series_cover_genres_bus(jav_model, settings.url_bus, settings.proxy_bus)
-                if status == StatusScrape.bus_specified_url_wrong:
-                    logger.record_fail(f'你指定的javbus网址有错误: {path_relative}\n')
-                    continue  # 结束对该jav的整理
-                elif status == StatusScrape.bus_multiple_search_results:
-                    logger.record_warn(f'部分信息可能错误，javbus搜索到同车牌的不同视频: {car}，{path_relative}\n')
-                elif status == StatusScrape.bus_not_found:
-                    logger.record_warn(f'javbus有码找不到该车牌的信息: {car}，{path_relative}\n')
+                if status == ScrapeStatusEnum.bus_specified_url_wrong:
+                    logger.record_fail(f'你指定的javbus网址有错误: ')
+                    continue
+                elif status == ScrapeStatusEnum.bus_multiple_search_results:
+                    logger.record_warn(f'部分信息可能错误，javbus搜索到同车牌的不同视频: {car}，')
+                elif status == ScrapeStatusEnum.bus_not_found:
+                    logger.record_warn(f'javbus有码找不到该车牌的信息: {car}，')
                 # 优化genres_bus
                 try:
                     genres_bus = [dict_bus_genres[i] for i in genres_bus
@@ -168,20 +170,17 @@ while input_start_key == '':
                     continue
                 # endregion
 
-                # region arzon找简介
+                # region（3.2.2.5）arzon找简介
                 status, cookie_arzon = find_plot_arzon(jav_model, cookie_arzon, settings.proxy_arzon)
-                if status == StatusScrape.arzon_exist_but_no_plot:
-                    logger.record_warn(f'找不到简介，尽管arzon上有搜索结果: {path_relative}\n')
-                elif status == StatusScrape.arzon_not_found:
-                    logger.record_warn(f'找不到简介，影片被arzon下架: {path_relative}\n')
-                elif status == StatusScrape.interrupted:
-                    logger.record_warn(f'访问arzon失败，需要重新整理该简介: {path_relative}\n')
-                else:
-                    # Status.success
-                    pass
+                if status == ScrapeStatusEnum.arzon_exist_but_no_plot:
+                    logger.record_warn(f'找不到简介，尽管arzon上有搜索结果: ')
+                elif status == ScrapeStatusEnum.arzon_not_found:
+                    logger.record_warn(f'找不到简介，影片被arzon下架: ')
+                elif status == ScrapeStatusEnum.interrupted:
+                    logger.record_warn(f'访问arzon失败，需要重新整理该简介: ')
                 # endregion
 
-                # region 整合完善genres
+                # region（3.2.2.6）整合完善genres
                 jav_model.Genres = genres = list(set(genres_db + genres_library + genres_bus))
                 if jav_file.is_subtitle:  # 有“中字“，加上特征”中文字幕”
                     genres.append('中文字幕')
@@ -192,12 +191,12 @@ while input_start_key == '':
                 ################################################################################
                 # 是CD1还是CDn？
                 sum_all_episodes = dict_car_episode[jav_file.car]  # 该车牌总共多少集
-                str_cd = f'-cd{jav_file.episode}' if sum_all_episodes > 1 else ''
+                jav_file.cd = f'-cd{jav_file.episode}' if sum_all_episodes > 1 else ''
                 prefect_jav_model_and_dict_for_standard(settings, jav_file, dict_for_standard, jav_model)
 
                 # 1重命名视频
                 try:
-                    rename_mp4(jav_file, logger, settings, dict_for_standard, path_relative, str_cd)
+                    rename_mp4(jav_file, logger, settings, dict_for_standard)
                 except FileExistsError:
                     continue
 
@@ -209,18 +208,18 @@ while input_start_key == '':
 
                 # 3重命名文件夹。如果是针对“文件”归类（即第2步），这一步会被跳过，因为用户只需要归类视频文件，不需要管文件夹。
                 try:
-                    rename_folder(jav_file, logger, settings, dict_for_standard, bool_separate_folder, sum_all_episodes)
+                    rename_folder(jav_file, logger, settings, dict_for_standard, sum_all_episodes)
                 except FileExistsError:
                     continue
 
                 # 更新一下path_relative
-                path_relative = f'{sep}{jav_file.path.replace(dir_choose, "")}'  # 影片的相对于所选文件夹的路径，用于报错
+                logger.path_relative = f'{sep}{jav_file.path.replace(dir_choose, "")}'  # 影片的相对于所选文件夹的路径，用于报错
 
                 # 4写入nfo【独特】
                 if settings.bool_nfo:
                     # 如果是为kodi准备的nfo，不需要多cd
                     if settings.bool_cd_only:
-                        path_nfo = f'{jav_file.dir}{sep}{jav_file.name_no_ext.replace(str_cd, "")}.nfo'
+                        path_nfo = f'{jav_file.dir}{sep}{jav_file.name_no_ext.replace(jav_file.cd, "")}.nfo'
                     else:
                         path_nfo = f'{jav_file.dir}{sep}{jav_file.name_no_ext}.nfo'
                     # nfo中tilte的写法
@@ -326,7 +325,7 @@ while input_start_key == '':
                                     download_pic(url_cover, path_fanart, proxy_dmm)
                                     print('    >fanart.jpg下载成功')
                                 except:
-                                    logger.record_fail(f'下载fanart.jpg失败: {url_cover}，{path_relative}\n')
+                                    logger.record_fail(f'下载fanart.jpg失败: {url_cover}，')
                                     continue  # 【退出对该jav的整理】
                         # 用户没有去javbus获取系列，或者指定“图书馆”网址，还是从javlibrary的dmm图片地址下载
                         else:
@@ -335,7 +334,7 @@ while input_start_key == '':
                                 download_pic(url_cover, path_fanart, proxy_dmm)
                                 print('    >fanart.jpg下载成功')
                             except:
-                                logger.record_fail(f'下载dmm上的封面失败: {url_cover}，{path_relative}\n')
+                                logger.record_fail(f'下载dmm上的封面失败: {url_cover}，')
                                 continue  # 【退出对该jav的整理】
                     # 裁剪生成 poster
                     if check_picture(path_poster):
@@ -359,15 +358,17 @@ while input_start_key == '':
                 # 7归类影片，针对文件夹【相同】
                 try:
                     num_temp = classify_folder(jav_file, no_fail, settings, dict_for_standard, dir_classify_target,
-                                               dir_current, bool_separate_folder, sum_all_episodes)
+                                               dir_current, sum_all_episodes)
                     no_fail = num_temp
                 except FileExistsError:
                     no_fail += 1
                     continue
 
             except:
-                logger.record_fail(f'发生错误，如一直在该影片报错请截图并联系作者: {path_relative}\n{format_exc()}\n')
+                logger.record_fail(f'发生错误，如一直在该影片报错请截图并联系作者: {format_exc()}\n')
                 continue  # 【退出对该jav的整理】
+        # endregion
+    # endregion
 
     # 完结撒花
     print('\n当前文件夹完成，', end='')
@@ -387,5 +388,5 @@ while input_start_key == '':
         print(' “0”失败！  ', dir_choose, '\n')
     if no_warn > 0:
         print('“警告信息.txt”还记录了', no_warn, '个警告信息！\n')
-    # os.system('pause')
-    input_start_key = input('回车继续选择文件夹整理: ')
+    input_key = input('回车继续选择文件夹整理: ')
+# endregion

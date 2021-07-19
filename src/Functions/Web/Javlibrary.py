@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 import re, os, requests
-from Class.EnumStatus import StatusScrape
+from Class.MyEnum import ScrapeStatusEnum
 from XML import replace_xml_win
 # from traceback import format_exc
 
@@ -31,8 +31,7 @@ def get_library_html(url, proxy):
         else:                                         # 代理工具返回的错误信息
             print('    >打开网页失败，空返回...重新尝试...')
             continue
-    print('>>请检查你的网络环境是否可以打开：', url)
-    os.system('pause')
+    input(f'>>请检查你的网络环境是否可以打开：{url}')
 
 
 # 返回: Status, html_jav_library
@@ -45,7 +44,7 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
             url_search = f'{url_library}/?v={url_appointg.group(1)}'
         else:
             # 指定的javlibrary网址有错误
-            return StatusScrape.specified_library_url_wrong, []
+            return ScrapeStatusEnum.specified_library_url_wrong, []
     # 用户没有指定网址，则去搜索
     else:
         url_search = f'{url_library}/vl_searchbyid.php?keyword={jav_file.car}'
@@ -68,7 +67,7 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
         if list_search_results:
             # 默认用第一个搜索结果
             url_jav = f'{url_library}/?v=jav{list_search_results[0][0]}'
-            status = StatusScrape.success
+            status = ScrapeStatusEnum.success
             # 在javlibrary上搜索 SSNI-589 SNIS-459 这两个车牌，你就能看懂下面的if
             if len(list_search_results) > 1 and not list_search_results[1][1].endswith('ク）'):  # ク）是蓝光重置版
                 # print(list_search_results)
@@ -78,14 +77,14 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
                 # 不同的片，但车牌完全相同，比如id-020。警告用户，但默认用第一个结果。
                 elif list_search_results[1][1].split(' ', 1)[0] == jav_file.car:
                     # 搜索到同车牌的不同视频
-                    status = StatusScrape.library_multiple_search_results
+                    status = ScrapeStatusEnum.library_multiple_search_results
                 # else: 还有一种情况，不同片，车牌也不同，但搜索到一堆，比如搜“AVOP-039”，还会得到“AVOP-390”，正确的肯定是第一个。
             # 打开这个jav在library上的网页
             print(f'    >获取信息: {url_jav}')
             html_jav_library = get_library_html(url_jav, proxy_library)
         # 第三种情况: 搜索不到这部影片，搜索结果页面什么都没有
         else:
-            return StatusScrape.library_not_found, []
+            return ScrapeStatusEnum.library_not_found, []
     # javlibrary的精彩影评   (.+?\s*.*?\s*.*?\s*.*?) 下面的匹配可能很奇怪，没办法，就这么奇怪
     review = ''
     list_all_reviews = re.findall(
@@ -95,7 +94,7 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
             list_reviews = re.findall(r'hidden">([\s\S]*?)</textarea>', rev, re.DOTALL)
             if list_reviews:
                 review = f'{review}{list_reviews[-1]}////'
-        review = review.replace('\n', '').replace('\t', '').replace('\r', '').rstrip()
+        review = review.replace('\n', '').replace('\t', '').replace('\r', '').strip()
     jav_model.Review = review
     # print(review)
     # 有大部分信息的html_jav_library
@@ -138,5 +137,5 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
             jav_model.Score = int(float(scoreg.group(1)) * 10)
     # 特点风格
     genres_library = re.findall(r'category tag">(.+?)<', html_jav_library)
-    return StatusScrape.success, genres_library
+    return ScrapeStatusEnum.success, genres_library
 

@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 import re, os, requests
-from Class.EnumStatus import StatusScrape
+from Class.MyEnum import ScrapeStatusEnum
 
 
 # from traceback import format_exc
@@ -28,14 +28,13 @@ def get_bus_html(url, proxy):
         else:
             print('    >打开网页失败，空返回...重新尝试...')
             continue
-    print('>>请检查你的网络环境是否可以打开：', url)
-    os.system('pause')
+    input(f'>>请检查你的网络环境是否可以打开：{url}')
 
 
 # 去javbus搜寻系列、在javbus的封面链接
 # 返回：系列名称，图片链接，状态码
 def find_series_cover_genres_bus(jav_model, url_bus, proxy):
-    status = StatusScrape.bus_not_found
+    status = ScrapeStatusEnum.bus_not_found
     html_jav_bus = ''
     # jav在javbus上的url，一般就是javbus网址/车牌
     url_jav_bus = f'{url_bus}/{jav_model.Car}'
@@ -44,7 +43,7 @@ def find_series_cover_genres_bus(jav_model, url_bus, proxy):
     html_temp = get_bus_html(url_jav_bus, proxy)
     if not re.search(r'404 Page', html_temp):
         html_jav_bus = html_temp
-        status = StatusScrape.success
+        status = ScrapeStatusEnum.success
         # 这部jav在javbus的网址不简单
     else:
         # 还是老老实实去搜索
@@ -69,9 +68,9 @@ def find_series_cover_genres_bus(jav_model, url_bus, proxy):
             if list_fit_results:
                 # 有多个结果，发个状态码，警告一下用户
                 if len(list_fit_results) > 1:
-                    status = StatusScrape.bus_multiple_search_results
+                    status = ScrapeStatusEnum.bus_multiple_search_results
                 else:
-                    status = StatusScrape.success
+                    status = ScrapeStatusEnum.success
                 # 默认用第一个搜索结果
                 url_first_result = list_fit_results[0]
                 jav_model.Javbus = url_first_result

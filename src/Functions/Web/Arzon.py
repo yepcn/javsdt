@@ -7,7 +7,7 @@ from os import system
 # 功能：获取一个arzon_cookie
 # 参数：代理proxy
 # 返回：cookies
-from EnumStatus import StatusScrape
+from MyEnum import ScrapeStatusEnum
 
 
 def steal_arzon_cookies(proxy):
@@ -32,8 +32,7 @@ def steal_arzon_cookies(proxy):
             # print(format_exc())
             print('通过失败，重新尝试...')
             continue
-    print('>>请检查你的网络环境是否可以打开：https://www.arzon.jp/')
-    system('pause')
+    input('>>请检查你的网络环境是否可以打开：https://www.arzon.jp/')
 
 
 # 功能：搜索arzon，或请求arzon上jav所在网页
@@ -61,8 +60,7 @@ def get_arzon_html(url, cookies, proxy):
         else:
             print('    >打开网页失败，空返回...重新尝试...')
             continue
-    print('>>请检查你的网络环境是否可以打开：', url)
-    system('pause')
+    input(f'>>请检查你的网络环境是否可以打开：{url}')
 
 
 # 功能：从arzon上查找简介
@@ -92,9 +90,9 @@ def find_plot_arzon(car, cookies, proxy):
                     for line in plot_br.split('<br />'):
                         line = line.strip()
                         plot = f'{plot}{line}'
-                    return StatusScrape.success, plot, cookies
+                    return ScrapeStatusEnum.success, plot, cookies
             # 几个搜索结果查找完了，也没有找到简介
-            return StatusScrape.arzon_exist_but_no_plot, '【arzon有该影片，但找不到简介】', cookies
+            return ScrapeStatusEnum.arzon_exist_but_no_plot, '【arzon有该影片，但找不到简介】', cookies
         # 没有搜索结果
         else:
             # arzon返回的页面实际是18岁验证
@@ -104,8 +102,7 @@ def find_plot_arzon(car, cookies, proxy):
                 continue
             # 不是成人验证，也没有简介
             else:
-                return StatusScrape.arzon_not_found, '【影片下架，暂无简介】', cookies
-    print('>>请检查你的网络环境是否可以通过成人验证：https://www.arzon.jp/')
-    system('pause')
-    return StatusScrape.interrupted, '', cookies
+                return ScrapeStatusEnum.arzon_not_found, '【影片下架，暂无简介】', cookies
+    input('>>请检查你的网络环境是否可以通过成人验证：https://www.arzon.jp/')
+    return ScrapeStatusEnum.interrupted, '', cookies
 

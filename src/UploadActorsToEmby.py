@@ -8,8 +8,7 @@ from os.path import exists
 
 # 检查“演员头像”文件夹是否就绪
 if not exists('演员头像'):
-    print('\n“演员头像”文件夹丢失！请把它放进exe的文件夹中！\n')
-    os.system('pause')
+    input('\n“演员头像”文件夹丢失！请把它放进exe的文件夹中！\n')
 # 读取配置文件，这个ini文件用来给用户设置emby网址和api id
 print('正在读取ini中的设置...')
 config_settings = RawConfigParser()
@@ -22,8 +21,7 @@ except:
     url_emby = api_key = ''
     bool_replace = False
     print(format_exc())
-    print('无法读取ini文件，请修改它为正确格式，或者打开“【ini】重新创建ini.exe”创建全新的ini！')
-    os.system('pause')
+    input('无法读取ini文件，请修改它为正确格式，或者打开“【ini】重新创建ini.exe”创建全新的ini！')
 print('读取ini文件成功!\n')
 # 修正用户输入的emby网址，无论是不是带“/”
 url_emby = url_emby.strip('/')
@@ -40,16 +38,13 @@ try:
     try:
         rqs_emby = requests.get(url=url_emby_persons)
     except requests.exceptions.ConnectionError:
-        print('无法访问emby服务端，请检查：', url_emby, '\n')
-        os.system('pause')
+        input(f'无法访问emby服务端，请检查：{url_emby}\n')
     except:
         print(format_exc())
-        print('发生未知错误，请截图并联系作者：', url_emby, '\n')
-        os.system('pause')
+        input(f'发生未知错误，请截图并联系作者：{url_emby}\n')
     # 401，无权访问
     if rqs_emby.status_code == 401:
-        print('请检查api id是否正确！\n')
-        os.system('pause')
+        input('请检查api id是否正确！\n')
     # print(rqs_emby.text)
     try:
         list_persons = loads(rqs_emby.text)['Items']
@@ -57,11 +52,9 @@ try:
         list_persons = []
         print(rqs_emby.text)
         print('发生错误！emby返回内容如上：')
-        print('请截图并联系作者！')
-        os.system('pause')
+        input('请截图并联系作者！')
     num_persons = len(list_persons)
     print(f'当前有{num_persons}个Person！\n')
-    # os.system('pause')
     # 用户emby中的persons，在“演员头像”文件夹中，已有头像的，记录下来
     f_txt = open("已收录的人员清单.txt", 'w', encoding="utf-8")
     f_txt.close()
@@ -109,10 +102,10 @@ try:
         print('当前模式：跳过以前上传的头像')
     print('成功上传', num_suc, '个！')
     print('暂无头像', num_fail, '个！')
-    print('已保存至“未收录的人员清单.txt”\n')
-    os.system('pause')
+    input('已保存至“未收录的人员清单.txt”\n')
 except:
     print(format_exc())
-    os.system('pause')
+    print('发生错误！emby返回内容如上：')
+    input('请截图并联系作者！')
 
 

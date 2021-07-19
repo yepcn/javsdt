@@ -104,7 +104,7 @@ def prefect_jav_model_and_dict_for_standard(settings, jav_file, dict_for_standar
         dict_for_standard['标题'] = dict_for_standard['完整标题']
     # 有些用户需要删去 标题末尾 可能存在的 演员姓名
     if settings.bool_strip_actors and dict_for_standard['标题'].endswith(dict_for_standard['全部演员']):
-        dict_for_standard['标题'] = dict_for_standard['标题'][:-len(dict_for_standard['全部演员'])].rstrip()
+        dict_for_standard['标题'] = dict_for_standard['标题'][:-len(dict_for_standard['全部演员'])].strip()
     dict_for_standard['评分'] = jav_model.Score
     dict_for_standard['系列'] = jav_model.Series if jav_model.Series else '有码系列'
     dict_for_standard['视频'] = dict_for_standard['原文件名'] = jav_file.name_no_ext  # dict_for_standard['视频']，先定义为原文件名，即将发生变化。
@@ -112,42 +112,42 @@ def prefect_jav_model_and_dict_for_standard(settings, jav_file, dict_for_standar
 
 
 # 功能：1重命名视频
-# 参数：设置settings，命名信息dict_for_standard，第几集str_cd，处理的影片jav，视频的相对路径path_relative
+# 参数：设置settings，命名信息dict_for_standard，处理的影片jav
 # 返回：命名信息dict_for_standard（dict_for_standard['视频']可能改变）、处理的影片jav（文件名改变）
 # 辅助：os.exists, os.rename, record_video_old, record_fail
-def rename_mp4(jav, logger, settings, dict_for_standard, path_relative, str_cd):
+def rename_mp4(jav_file, logger, settings, dict_for_standard):
     if settings.bool_rename_video:
         # 构造新文件名，不带文件类型后缀
         name_without_ext = ''
         for j in settings.list_name_video:
             name_without_ext = f'{name_without_ext}{dict_for_standard[j]}'
-        name_without_ext = f'{name_without_ext.rstrip()}{str_cd}'  # 去除末尾空格，否则windows会自动删除空格，导致程序仍以为带空格
-        path_new = f'{jav.dir}{sep}{name_without_ext}{jav.ext}'  # 【临时变量】path_new 视频文件的新路径
+        name_without_ext = f'{name_without_ext.strip()}{jav_file.cd}'  # 去除末尾空格，否则windows会自动删除空格，导致程序仍以为带空格
+        path_new = f'{jav_file.dir}{sep}{name_without_ext}{jav_file.ext}'  # 【临时变量】path_new 视频文件的新路径
         # 一般情况，不存在同名视频文件
         if not os.path.exists(path_new):
-            os.rename(jav.path, path_new)
-            logger.record_video_old(jav.path, path_new)
+            os.rename(jav_file.path, path_new)
+            logger.record_video_old(jav_file.path, path_new)
         # 已存在目标文件，但就是现在的文件
-        elif jav.path.upper() == path_new.upper():
+        elif jav_file.path.upper() == path_new.upper():
             try:
-                os.rename(jav.path, path_new)
+                os.rename(jav_file.path, path_new)
             # windows本地磁盘，“abc-123.mp4”重命名为“abc-123.mp4”或“ABC-123.mp4”没问题，但有用户反映，挂载的磁盘会报错“file exists error”
             except:
-                logger.record_fail(f'请自行重命名大小写：{path_relative}\n')
+                logger.record_fail(f'请自行重命名大小写：{logger.path_relative}\n')
         # 存在目标文件，不是现在的文件。
         else:
             logger.record_fail(f'重命名影片失败，重复的影片，已经有相同文件名的视频了：{path_new}\n')
             raise FileExistsError                # 【终止对该jav的整理】
         dict_for_standard['视频'] = name_without_ext      # 【更新】 dict_for_standard['视频']
-        jav.name = f'{name_without_ext}{jav.ext}'   # 【更新】jav.name，重命名操作可能不成功，但之后的操作仍然围绕成功的jav.name来命名
-        print(f'    >修改文件名{str_cd}完成')
+        jav_file.name = f'{name_without_ext}{jav_file.ext}'   # 【更新】jav.name，重命名操作可能不成功，但之后的操作仍然围绕成功的jav.name来命名
+        print(f'    >修改文件名{jav_file.cd}完成')
         # 重命名字幕
-        if jav.subtitle and settings.bool_rename_subtitle:
-            subtitle_new = f'{name_without_ext}{jav.ext_subtitle}'   # 【临时变量】subtitle_new
-            path_subtitle_new = f'{jav.dir}{sep}{subtitle_new}'    # 【临时变量】path_subtitle_new
-            if jav.path_subtitle != path_subtitle_new:
-                os.rename(jav.path_subtitle, path_subtitle_new)
-                jav.subtitle = subtitle_new     # 【更新】 jav.subtitle 字幕完整文件名
+        if jav_file.subtitle and settings.bool_rename_subtitle:
+            subtitle_new = f'{name_without_ext}{jav_file.ext_subtitle}'   # 【临时变量】subtitle_new
+            path_subtitle_new = f'{jav_file.dir}{sep}{subtitle_new}'    # 【临时变量】path_subtitle_new
+            if jav_file.path_subtitle != path_subtitle_new:
+                os.rename(jav_file.path_subtitle, path_subtitle_new)
+                jav_file.subtitle = subtitle_new     # 【更新】 jav.subtitle 字幕完整文件名
             print('    >修改字幕名完成')
 
 
@@ -161,7 +161,7 @@ def classify_files(jav_file, logger, settings, dict_for_standard):
         # 移动的目标文件夹路径
         dir_dest = f'{settings.dir_classify_target}{sep}'
         for j in settings.list_classify_basis:
-            dir_dest = f'{dir_dest}{dict_for_standard[j].rstrip()}'     # 【临时变量】归类的目标文件夹路径    C:\Users\JuneRain\Desktop\测试文件夹\葵司\
+            dir_dest = f'{dir_dest}{dict_for_standard[j].strip()}'     # 【临时变量】归类的目标文件夹路径    C:\Users\JuneRain\Desktop\测试文件夹\葵司\
         # 还不存在该文件夹，新建
         if not os.path.exists(dir_dest):
             os.makedirs(dir_dest)
@@ -184,11 +184,11 @@ def classify_files(jav_file, logger, settings, dict_for_standard):
 
 
 # 功能：3重命名文件夹【相同】如果已进行第2操作，第3操作不会进行，因为用户只需要归类视频文件，不需要管文件夹。
-# 参数：重命名文件夹的公式list_name_folder，命名信息dict_for_standard，是否是独立文件夹bool_separate_folder，
+# 参数：重命名文件夹的公式list_name_folder，命名信息dict_for_standard，
 #      处理的影片jav，该车牌总共多少cd num_all_episodes，已失败次数num_fail
 # 返回：处理的影片jav（所在文件夹路径改变）、已失败次数num_fail
 # 辅助：os.exists, os.rename, os.makedirs，record_fail
-def rename_folder(jav_file, logger, dict_for_standard, settings, bool_separate_folder, sum_all_episodes):
+def rename_folder(jav_file, logger, dict_for_standard, settings, sum_all_episodes):
     if settings.bool_rename_folder:
         # 构造 新文件夹名folder_new
         folder_new = ''
@@ -196,7 +196,7 @@ def rename_folder(jav_file, logger, dict_for_standard, settings, bool_separate_f
             folder_new = f'{folder_new}{dict_for_standard[j]}'
         folder_new = folder_new.rstrip(' .')  # 【临时变量】新的所在文件夹。去除末尾空格和“.”
         # 是独立文件夹，才会重命名文件夹
-        if bool_separate_folder:
+        if jav_file.is_in_separate_folder:
             # 当前视频是该车牌的最后一集，他的兄弟姐妹已经处理完成，才会重命名它们的“家”。
             if jav_file.episode == sum_all_episodes:
                 dir_new = f'{os.path.dirname(jav_file.dir)}{sep}{folder_new}'  # 【临时变量】新的影片所在文件夹路径。
@@ -266,14 +266,14 @@ def collect_sculpture(list_actors, dir_current):
 
 
 # 功能：7归类影片，针对文件夹（如果已进行第2操作，第7操作不会进行，因为用户只需要归类视频文件，不需要管文件夹）
-# 参数：设置settings，处理的影片jav，该车牌总共多少cd num_all_episodes，是否是独立文件夹bool_separate_folder，
+# 参数：设置settings，处理的影片jav，该车牌总共多少cd num_all_episodes，
 #      归类的目标目录路径dir_classify_target，当前处理的文件夹路径dir_current，命名信息dict_for_standard
 # 返回：处理的影片jav（所在文件夹路径改变）、已失败次数num_fail
 # 辅助：os.exists, os.rename, os.makedirs，
-def classify_folder(jav, num_fail, settings, dict_for_standard, dir_classify_target, dir_current, bool_separate_folder, num_all_episodes):
-    if settings.bool_classify and settings.bool_classify_folder and jav.episode == num_all_episodes:  # 需要移动文件夹，且，是该影片的最后一集
+def classify_folder(jav_file, num_fail, settings, dict_for_standard, dir_classify_target, dir_current, num_all_episodes):
+    if settings.bool_classify and settings.bool_classify_folder and jav_file.episode == num_all_episodes:  # 需要移动文件夹，且，是该影片的最后一集
         # 用户选择的文件夹是一部影片的独立文件夹，为了避免在这个文件夹里又生成新的归类文件夹
-        if bool_separate_folder and dir_classify_target.startswith(dir_current):
+        if jav_file.is_in_separate_folder and dir_classify_target.startswith(dir_current):
             print('    >无法归类，请选择该文件夹的上级文件夹作它的归类根目录')
             return num_fail
         # 归类放置的目标文件夹
@@ -281,17 +281,17 @@ def classify_folder(jav, num_fail, settings, dict_for_standard, dir_classify_tar
         # 移动的目标文件夹
         for j in settings.list_classify_basis:
             dir_dest = f'{dir_dest}{dict_for_standard[j].rstrip(" .")}'  # 【临时变量】 文件夹移动的目标上级文件夹  C:\Users\JuneRain\Desktop\测试文件夹\1\葵司\
-        dir_new = f'{dir_dest}{sep}{jav.folder}'  # 【临时变量】 文件夹移动的目标路径   C:\Users\JuneRain\Desktop\测试文件夹\1\葵司\【葵司】AVOP-127\
+        dir_new = f'{dir_dest}{sep}{jav_file.folder}'  # 【临时变量】 文件夹移动的目标路径   C:\Users\JuneRain\Desktop\测试文件夹\1\葵司\【葵司】AVOP-127\
         # print(dir_new)
         # 还不存在归类的目标文件夹
         if not os.path.exists(dir_new):
             os.makedirs(dir_new)
             # 把现在文件夹里的东西都搬过去
-            jav_files = os.listdir(jav.dir)
+            jav_files = os.listdir(jav_file.dir)
             for i in jav_files:
-                os.rename(f'{jav.dir}{sep}{i}', f'{dir_new}{sep}{i}')
+                os.rename(f'{jav_file.dir}{sep}{i}', f'{dir_new}{sep}{i}')
             # 删除“旧房子”，这是javsdt唯一的删除操作，而且os.rmdir只能删除空文件夹
-            os.rmdir(jav.dir)
+            os.rmdir(jav_file.dir)
             print('    >归类文件夹完成')
         # 用户已经有了这个文件夹，可能以前处理过同车牌的视频
         else:

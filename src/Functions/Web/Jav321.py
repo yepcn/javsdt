@@ -26,8 +26,7 @@ def get_321_html(url, proxy):
         else:
             print('    >打开网页失败，空返回...重新尝试...')
             continue
-    print('>>请检查你的网络环境是否可以打开：', url)
-    system('pause')
+    input(f'>>请检查你的网络环境是否可以打开：{url}')
 
 
 # 向jav321 post车牌，得到jav所在网页，也可能是无结果的网页，返回html
@@ -53,6 +52,5 @@ def post_321_html(url, data, proxy):
         else:
             print('    >打开网页失败，空返回...重新尝试...')
             continue
-    print('>>请检查你的网络环境是否可以打开：', url)
-    system('pause')
+    input(f'>>请检查你的网络环境是否可以打开：{url}')
 

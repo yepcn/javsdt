@@ -366,7 +366,7 @@ class Settings(object):
                     list_jav_files.append(jav_struct)
                 else:
                     print(f'>>无法处理: {dir_current_relative}{sep}{file_raw}')
-        return list_jav_files, dict_car_episode
+        return list_jav_files, dict_car_episode, no_current
 
     # 功能：所选文件夹总共有多少个视频文件
     # 参数：用户选择整理的文件夹路径dir_choose

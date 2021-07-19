@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class StatusScrape(Enum):
+class ScrapeStatusEnum(Enum):
     interrupted = 0
     success = 1
 
@@ -22,7 +22,7 @@ class StatusScrape(Enum):
     arzon_not_found = 13
 
 
-class StatusCompletion(Enum):
+class CompletionStatusEnum(Enum):
     unknown = 0
     only_db = 1,
     db_library = 2
@@ -30,7 +30,7 @@ class StatusCompletion(Enum):
     db_library_bus = 4
 
 
-class StatusCutType(Enum):
+class CutTypeEnum(Enum):
     unknown = 0
     left = 1
     middle = 2
