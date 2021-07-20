@@ -124,7 +124,7 @@ while input_key == '':
                 try:
                     genres_db = [dict_db_genres[i] for i in genres_db if dict_db_genres[i] != '删除']
                 except KeyError as error:
-                    logger.record_fail(f'发现新的javdb特征需要添加至【特征对照表】，另请告知作者: {error}\n')
+                    logger.record_fail(f'发现新的javdb特征需要添加至【特征对照表】，请告知作者: {error}\n')
                     continue  # 结束对该jav的整理
                 # endregion
 
@@ -140,13 +140,12 @@ while input_key == '':
                     logger.record_fail(f'javlibrary找不到该车牌的信息: {jav_file.car}，')
                     continue  # 结束对该jav的整理
                 elif status == ScrapeStatusEnum.library_multiple_search_results:
-                    bool_unique = False
                     logger.record_fail(f'javlibrary搜索到同车牌的不同视频: {jav_file.car}，')
                 # 优化genres_library
                 try:
                     genres_library = [dict_library_genres[i] for i in genres_library if dict_library_genres[i] != '删除']
                 except KeyError as error:
-                    logger.record_fail(f'发现新的javlibrary特征需要添加至【特征对照表】，另请告知作者: {error}\n')
+                    logger.record_fail(f'发现新的javlibrary特征需要添加至【特征对照表】，请告知作者: {error}\n')
                     continue  # 结束对该jav的整理
                 # endregion
 
@@ -172,12 +171,16 @@ while input_key == '':
 
                 # region（3.2.2.5）arzon找简介
                 status, cookie_arzon = find_plot_arzon(jav_model, cookie_arzon, settings.proxy_arzon)
-                if status == ScrapeStatusEnum.arzon_exist_but_no_plot:
-                    logger.record_warn(f'找不到简介，尽管arzon上有搜索结果: ')
+                url_search_arzon = f'https://www.arzon.jp/itemlist.html?t=&m=all&s=&q={car.replace("-", "")}'
+                if status == ScrapeStatusEnum.arzon_specified_url_wrong:
+                    logger.record_fail(f'你指定的arzon网址有错误: ')
+                    continue
+                elif status == ScrapeStatusEnum.arzon_exist_but_no_plot:
+                    logger.record_warn(f'找不到简介，尽管arzon上有搜索结果: {url_search_arzon}， ')
                 elif status == ScrapeStatusEnum.arzon_not_found:
-                    logger.record_warn(f'找不到简介，影片被arzon下架: ')
+                    logger.record_warn(f'找不到简介，影片被arzon下架: {url_search_arzon}， ')
                 elif status == ScrapeStatusEnum.interrupted:
-                    logger.record_warn(f'访问arzon失败，需要重新整理该简介: ')
+                    logger.record_warn(f'访问arzon失败，需要重新整理该简介: {url_search_arzon}， ')
                 # endregion
 
                 # region（3.2.2.6）整合完善genres
@@ -312,7 +315,7 @@ while input_key == '':
                         pass
                     else:
                         # javlibrary上有唯一的搜索结果，优先去取javbus下载封面，已经去过javbus并找到封面，用户没有指定javbus的网址
-                        if bool_unique and settings.bool_bus_first and url_cover_bus and '图书馆' not in jav_file.name:
+                        if settings.bool_bus_first and url_cover_bus and '图书馆' not in jav_file.name:
                             print('    >从javbus下载封面: ', url_cover_bus)
                             try:
                                 download_pic(url_cover_bus, path_fanart, proxy_bus)
@@ -375,7 +378,7 @@ while input_key == '':
     if no_fail > 0:
         print('失败', no_fail, '个!  ', dir_choose, '\n')
         line = -1
-        with open('【可删除】失败记录.txt', 'r', encoding="utf-8") as f:
+        with open('【可删除】失败.txt', 'r', encoding="utf-8") as f:
             content = list(f)
         while 1:
             if content[line].startswith('已'):
@@ -383,10 +386,10 @@ while input_key == '':
             line -= 1
         for i in range(line + 1, 0):
             print(content[i], end='')
-        print('\n“【可删除】失败记录.txt”已记录错误\n')
+        print('\n“【可删除】失败.txt”已记录错误\n')
     else:
         print(' “0”失败！  ', dir_choose, '\n')
     if no_warn > 0:
-        print('“警告信息.txt”还记录了', no_warn, '个警告信息！\n')
+        print('“警告.txt”还记录了', no_warn, '个警告信息！\n')
     input_key = input('回车继续选择文件夹整理: ')
 # endregion

@@ -28,9 +28,12 @@ class Logger(object):
     # 参数：错误信息
     # 返回：无
     # 辅助：无
-    def record_fail(self, fail_msg):
+    def record_fail(self, fail_msg, extra_msg=None):
         self.no_fail += 1
-        msg = f'    >第{self.no_fail}个失败！{fail_msg}{self.path_relative}\n'
+        # python 如何让类方法获取实例属性作为参数的默认值？暂时没有
+        if not extra_msg:
+            extra_msg = self.path_relative
+        msg = f'    >第{self.no_fail}个失败！{fail_msg}{extra_msg}\n'
         txt = open('【可删除】失败记录.txt', 'a', encoding="utf-8")
         txt.write(msg)
         txt.close()
@@ -40,9 +43,11 @@ class Logger(object):
     # 参数：警告信息
     # 返回：无
     # 辅助：无
-    def record_warn(self, warn_msg):
+    def record_warn(self, warn_msg, extra_msg=None):
         self.no_warn += 1
-        msg = f'    >第{self.no_warn}个警告！{warn_msg}{self.path_relative}\n'
+        if not extra_msg:
+            extra_msg = self.path_relative
+        msg = f'    >第{self.no_warn}个警告！{warn_msg}{extra_msg}\n'
         txt = open('【可删除】警告信息.txt', 'a', encoding="utf-8")
         txt.write(msg)
         txt.close()

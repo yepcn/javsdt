@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 from enum import Enum
 
 
@@ -36,3 +37,9 @@ class CutTypeEnum(Enum):
     middle = 2
     right = 3
     custom = 4
+
+
+class MsgTypeEnum(Enum):
+    Common = 0
+    错误 = 1
+    警告 = 2

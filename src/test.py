@@ -11,10 +11,14 @@ import os
 # dict = {'A': 'S', }
 # change_dict(dict)
 # print(dict)
+from MyEnum import MsgTypeEnum
 
-def change_int(int_a):
-    int_a = 3
 
-int_b = 1
-change_int(int_b)
-print(int_b)
+# def change_int(int_a):
+#     int_a = 3
+#
+# int_b = 1
+# change_int(int_b)
+# print(int_b)
+
+print(MsgTypeEnum.测试.name)
