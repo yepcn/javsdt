@@ -17,9 +17,9 @@ from Genre import better_dict_genre
 # ################################################## 部分不同 ##########################################################
 from Standard import collect_sculpture
 from Picture import add_watermark_divulge, crop_poster_youma
-from Functions.Web.Arzon import steal_arzon_cookies, find_plot_arzon
+from Functions.Web.Arzon import steal_arzon_cookies, scrape_from_arzon
 # ################################################## 独特 ##########################################################
-from Functions.Web.Javbus import find_series_cover_genres_bus
+from Functions.Web.Javbus import scrape_from_bus
 
 #  main开始
 from Javdb import scrape_from_db
@@ -131,8 +131,7 @@ while input_key == '':
                 car = jav_model.Car
 
                 # region（3.2.2.3）从javlibrary获取信息
-                status, genres_library = scrape_from_library(jav_file, jav_model, settings.url_library,
-                                                             settings.proxy_library)
+                status, genres_library = scrape_from_library(jav_file, jav_model, settings.url_library, settings.proxy_library)
                 if status == ScrapeStatusEnum.library_specified_url_wrong:
                     logger.record_fail(f'你指定的javlibrary网址有错误: ')
                     continue  # 结束对该jav的整理
@@ -150,7 +149,7 @@ while input_key == '':
                 # endregion
 
                 # region（3.2.2.4）前往javbus查找【封面】【系列】【特征】
-                status, genres_bus = find_series_cover_genres_bus(jav_model, settings.url_bus, settings.proxy_bus)
+                status, genres_bus = scrape_from_bus(jav_file, jav_model, settings.url_bus, settings.proxy_bus)
                 if status == ScrapeStatusEnum.bus_specified_url_wrong:
                     logger.record_fail(f'你指定的javbus网址有错误: ')
                     continue
@@ -170,17 +169,17 @@ while input_key == '':
                 # endregion
 
                 # region（3.2.2.5）arzon找简介
-                status, cookie_arzon = find_plot_arzon(jav_model, cookie_arzon, settings.proxy_arzon)
+                status, cookie_arzon = scrape_from_arzon(jav_model, cookie_arzon, settings.proxy_arzon)
                 url_search_arzon = f'https://www.arzon.jp/itemlist.html?t=&m=all&s=&q={car.replace("-", "")}'
                 if status == ScrapeStatusEnum.arzon_specified_url_wrong:
                     logger.record_fail(f'你指定的arzon网址有错误: ')
                     continue
                 elif status == ScrapeStatusEnum.arzon_exist_but_no_plot:
-                    logger.record_warn(f'找不到简介，尽管arzon上有搜索结果: {url_search_arzon}， ')
+                    logger.record_warn(f'找不到简介，尽管arzon上有搜索结果: {url_search_arzon}，')
                 elif status == ScrapeStatusEnum.arzon_not_found:
-                    logger.record_warn(f'找不到简介，影片被arzon下架: {url_search_arzon}， ')
+                    logger.record_warn(f'找不到简介，影片被arzon下架: {url_search_arzon}，')
                 elif status == ScrapeStatusEnum.interrupted:
-                    logger.record_warn(f'访问arzon失败，需要重新整理该简介: {url_search_arzon}， ')
+                    logger.record_warn(f'访问arzon失败，需要重新整理该简介: {url_search_arzon}，')
                 # endregion
 
                 # region（3.2.2.6）整合完善genres
@@ -195,7 +194,7 @@ while input_key == '':
                 # 是CD1还是CDn？
                 sum_all_episodes = dict_car_episode[jav_file.car]  # 该车牌总共多少集
                 jav_file.cd = f'-cd{jav_file.episode}' if sum_all_episodes > 1 else ''
-                prefect_jav_model_and_dict_for_standard(settings, jav_file, dict_for_standard, jav_model)
+                prefect_jav_model_and_dict_for_standard(jav_file, jav_model, settings, dict_for_standard)
 
                 # 1重命名视频
                 try:

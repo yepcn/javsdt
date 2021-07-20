@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-import re, os, requests
+import re, requests
 from Class.MyEnum import ScrapeStatusEnum
 
 
@@ -33,19 +33,20 @@ def get_bus_html(url, proxy):
 
 # 去javbus搜寻系列、在javbus的封面链接
 # 返回：系列名称，图片链接，状态码
-def find_series_cover_genres_bus(jav_file, jav_model, url_bus, proxy):
-    html_jav_library = ''
+def scrape_from_bus(jav_file, jav_model, url_bus, proxy):
+    status = ScrapeStatusEnum.bus_not_found
     # 用户指定了网址，则直接得到jav所在网址
     if '公交车' in jav_file.name:
-        url_appointg = re.search(r'公交车(jav.+?)\.', jav_file.name)
+        url_appointg = re.search(r'公交车(.+?)\.', jav_file.name)
         if url_appointg:
-            url_search = f'{url_bus}/?v={url_appointg.group(1)}'
+            html_jav_bus = get_bus_html(f'{url_bus}/?v={url_appointg.group(1)}', proxy)
+            if not re.search(r'404 Page', html_jav_bus):
+                return ScrapeStatusEnum.specified_bus_url_wrong, []
         else:
             # 指定的javlibrary网址有错误
-            return ScrapeStatusEnum.specified_library_url_wrong, []
+            return ScrapeStatusEnum.specified_bus_url_wrong, []
     # 用户没有指定网址，则去搜索
     else:
-        status = ScrapeStatusEnum.bus_not_found
         html_jav_bus = ''
         # jav在javbus上的url，一般就是javbus网址/车牌
         url_jav_bus = f'{url_bus}/{jav_model.Car}'

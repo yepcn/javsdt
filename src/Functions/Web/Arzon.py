@@ -66,7 +66,7 @@ def get_arzon_html(url, cookies, proxy):
 # 功能：从arzon上查找简介
 # 参数：车牌car，cookies，proxy
 # 返回：简介，执行完成状态码，cookies
-def find_plot_arzon(car, cookies, proxy):
+def scrape_from_arzon(car, cookies, proxy):
     for retry in range(2):
         url_search_arzon = f'https://www.arzon.jp/itemlist.html?t=&m=all&s=&q={car.replace("-", "")}'
         print('    >查找简介：', url_search_arzon)

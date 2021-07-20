@@ -11,6 +11,8 @@ from xml.etree.ElementTree import parse, ParseError
 #      ③如果【原文件名】包含list_subtitle_character中的元素即判断有“中文字幕”,
 # 返回：True
 # 辅助：os.path.exists，xml.etree.ElementTree.parse，xml.etree.ElementTree.ParseError
+from Logger import record_video_old
+from MyEnum import StandardStatusEnum
 from XML import replace_xml_win
 
 
@@ -67,7 +69,7 @@ def judge_subtitle_and_divulge(settings, jav_file):
     jav_file.is_divulge = judge_exist_divulge(jav_file.dir_current, jav_file.name_no_ext, settings.list_divulge_words_in_filename)
 
 
-def prefect_jav_model_and_dict_for_standard(settings, jav_file, dict_for_standard, jav_model):
+def prefect_jav_model_and_dict_for_standard(jav_file, jav_model, settings, dict_for_standard):
     # 是否中字 是否无码流出
     judge_subtitle_and_divulge(settings, jav_file)
     # '是否中字'这一命名元素被激活
@@ -126,13 +128,14 @@ def rename_mp4(jav_file, logger, settings, dict_for_standard):
         # 一般情况，不存在同名视频文件
         if not os.path.exists(path_new):
             os.rename(jav_file.path, path_new)
-            logger.record_video_old(jav_file.path, path_new)
+            record_video_old(jav_file.path, path_new)
         # 已存在目标文件，但就是现在的文件
         elif jav_file.path.upper() == path_new.upper():
             try:
                 os.rename(jav_file.path, path_new)
             # windows本地磁盘，“abc-123.mp4”重命名为“abc-123.mp4”或“ABC-123.mp4”没问题，但有用户反映，挂载的磁盘会报错“file exists error”
             except:
+                status = StandardStatusEnum.remaining_problem_case_sensitive
                 logger.record_fail(f'请自行重命名大小写：{logger.path_relative}\n')
         # 存在目标文件，不是现在的文件。
         else:

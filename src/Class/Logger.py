@@ -53,13 +53,13 @@ class Logger(object):
         txt.close()
         print(msg, end='')
 
-    # 功能：记录旧文件名
-    # 参数：新文件名，旧文件名
-    # 返回：无
-    # 辅助：无
-    @staticmethod
-    def record_video_old(name_new, name_old):
-        txt = open('【可删除】新旧文件名清单.txt', 'a', encoding="utf-8")
-        txt.write(f'<<<< {name_old}\n')
-        txt.write(f'>>>> {name_new}\n')
-        txt.close()
+
+# 功能：记录旧文件名
+# 参数：新文件名，旧文件名
+# 返回：无
+# 辅助：无
+def record_video_old(name_new, name_old):
+    txt = open('【可删除】新旧文件名清单.txt', 'a', encoding="utf-8")
+    txt.write(f'<<<< {name_old}\n')
+    txt.write(f'>>>> {name_new}\n')
+    txt.close()

@@ -39,7 +39,7 @@ class CutTypeEnum(Enum):
     custom = 4
 
 
-class MsgTypeEnum(Enum):
-    Common = 0
-    错误 = 1
-    警告 = 2
+class StandardStatusEnum(Enum):
+    interrupted = 0
+    success = 1
+    remaining_problem_case_sensitive = 2

@@ -122,8 +122,8 @@ def scrape_from_db(jav_file, jav_model, url_db, proxy_db):
     if '仓库' in jav_file.name:
         url_appointg = re.search(r'仓库(\w+?)', jav_file.name)
         if url_appointg:
-            jdvdb = url_appointg
-            html_jav_db = get_db_html(f'{url_db}/v/{jdvdb}', proxy_db)
+            javdb = url_appointg
+            html_jav_db = get_db_html(f'{url_db}/v/{javdb}', proxy_db)
             if re.search(r'頁面未找到', html_jav_db):
                 return ScrapeStatusEnum.db_specified_url_wrong, []
         else:
