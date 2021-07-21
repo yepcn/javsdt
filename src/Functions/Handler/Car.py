@@ -110,7 +110,7 @@ def find_car_wuma(file, list_suren_car):
 # 辅助：re.search
 def find_car_suren(file, list_suren_car):
     carg = re.search(r'([A-Z][A-Z]+)[-_ ]*(\d\d+)', file)  # 匹配字幕车牌
-    if str(carg) != 'None':
+    if carg:
         car_pref = carg.group(1)
         # 如果用户把视频文件名指定为jav321上的网址，让该视频通过
         if car_pref not in list_suren_car and '三二一' not in file:

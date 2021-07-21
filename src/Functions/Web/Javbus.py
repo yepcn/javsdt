@@ -93,7 +93,7 @@ def scrape_from_bus(jav_file, jav_model, url_bus, proxy):
     if html_jav_bus:
         # DVD封面cover
         coverg = re.search(r'bigImage" href="/pics/cover/(.+?)"', html_jav_bus)
-        if str(coverg) != 'None':
+        if coverg:
             jav_model.Javbus = f'{url_bus}{coverg.group(1)}'
         # 系列:</span> <a href="https://www.cdnbus.work/series/kpl">悪質シロウトナンパ</a>
         seriesg = re.search(r'系列:</span> <a href=".+?">(.+?)</a>', html_jav_bus)

@@ -22,3 +22,5 @@
 
 /src/*.txt
 !/src/StaticFiles/【素人车牌】.txt
+
+*/Javdb.py

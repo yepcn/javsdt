@@ -13,6 +13,7 @@ from xml.etree.ElementTree import parse, ParseError
 # 辅助：os.path.exists，xml.etree.ElementTree.parse，xml.etree.ElementTree.ParseError
 from Logger import record_video_old
 from MyEnum import StandardStatusEnum
+from MyError import TooManyDirectoryLevelsError
 from XML import replace_xml_win
 
 
@@ -113,11 +114,13 @@ def prefect_jav_model_and_dict_for_standard(jav_file, jav_model, settings, dict_
     dict_for_standard['原文件夹名'] = jav_file.folder
 
 
-# 功能：1重命名视频
+# 功能：1重命名视频(jav_file和dict_for_standard发生改变）
 # 参数：设置settings，命名信息dict_for_standard，处理的影片jav
-# 返回：命名信息dict_for_standard（dict_for_standard['视频']可能改变）、处理的影片jav（文件名改变）
+# 返回：path_return，重命名操作可能因为139行不成功，返回path_return告知主程序提醒用户重新整理
 # 辅助：os.exists, os.rename, record_video_old, record_fail
-def rename_mp4(jav_file, logger, settings, dict_for_standard):
+def rename_mp4(jav_file, settings, dict_for_standard):
+    # 如果重命名操作不成功，将path_new赋值给path_return，提醒用户自行重命名
+    path_return = ''
     if settings.bool_rename_video:
         # 构造新文件名，不带文件类型后缀
         name_without_ext = ''
@@ -135,12 +138,11 @@ def rename_mp4(jav_file, logger, settings, dict_for_standard):
                 os.rename(jav_file.path, path_new)
             # windows本地磁盘，“abc-123.mp4”重命名为“abc-123.mp4”或“ABC-123.mp4”没问题，但有用户反映，挂载的磁盘会报错“file exists error”
             except:
-                status = StandardStatusEnum.remaining_problem_case_sensitive
-                logger.record_fail(f'请自行重命名大小写：{logger.path_relative}\n')
+                # 提醒用户后续自行更改
+                path_return = path_new
         # 存在目标文件，不是现在的文件。
         else:
-            logger.record_fail(f'重命名影片失败，重复的影片，已经有相同文件名的视频了：{path_new}\n')
-            raise FileExistsError                # 【终止对该jav的整理】
+            raise FileExistsError(f'重命名影片失败，重复的影片，已经有相同文件名的视频了：{path_new}')    # 【终止对该jav的整理】
         dict_for_standard['视频'] = name_without_ext      # 【更新】 dict_for_standard['视频']
         jav_file.name = f'{name_without_ext}{jav_file.ext}'   # 【更新】jav.name，重命名操作可能不成功，但之后的操作仍然围绕成功的jav.name来命名
         print(f'    >修改文件名{jav_file.cd}完成')
@@ -152,13 +154,13 @@ def rename_mp4(jav_file, logger, settings, dict_for_standard):
                 os.rename(jav_file.path_subtitle, path_subtitle_new)
                 jav_file.subtitle = subtitle_new     # 【更新】 jav.subtitle 字幕完整文件名
             print('    >修改字幕名完成')
-
+    return path_return
 
 # 功能：2归类影片，只针对视频文件和字幕文件，无视它们当前所在文件夹
-# 参数：设置settings，归类的目标目录路径dir_classify_target，命名信息dict_for_standard，处理的影片jav，已失败次数num_fail
-# 返回：处理的影片jav（所在文件夹路径改变）、已失败次数num_fail
+# 参数：设置settings，归类的目标目录路径dir_classify_target，命名信息dict_for_standard，处理的影片jav
+# 返回：处理的影片jav（所在文件夹路径改变）
 # 辅助：os.exists, os.rename, os.makedirs，
-def classify_files(jav_file, logger, settings, dict_for_standard):
+def classify_files(jav_file, settings, dict_for_standard):
     # 如果需要归类，且不是针对文件夹来归类
     if settings.bool_classify and not settings.bool_classify_folder:
         # 移动的目标文件夹路径
@@ -182,16 +184,15 @@ def classify_files(jav_file, logger, settings, dict_for_standard):
                 print('    >归类字幕文件完成')
             jav_file.dir = dir_dest                         # 【更新】jav.dir
         else:
-            logger.record_fail(f'归类失败，重复的影片，归类的目标文件夹已经存在相同的影片: {path_new}\n')
-            raise FileExistsError    # 【终止对该jav的整理】
+            raise FileExistsError(f'归类失败，重复的影片，归类的目标文件夹已经存在相同的影片: {path_new}')    # 【终止对该jav的整理】
 
 
 # 功能：3重命名文件夹【相同】如果已进行第2操作，第3操作不会进行，因为用户只需要归类视频文件，不需要管文件夹。
 # 参数：重命名文件夹的公式list_name_folder，命名信息dict_for_standard，
-#      处理的影片jav，该车牌总共多少cd num_all_episodes，已失败次数num_fail
-# 返回：处理的影片jav（所在文件夹路径改变）、已失败次数num_fail
+#      处理的影片jav，该车牌总共多少cd num_all_episodes
+# 返回：处理的影片jav（所在文件夹路径改变）
 # 辅助：os.exists, os.rename, os.makedirs，record_fail
-def rename_folder(jav_file, logger, dict_for_standard, settings, sum_all_episodes):
+def rename_folder(jav_file, dict_for_standard, settings, sum_all_episodes):
     if settings.bool_rename_folder:
         # 构造 新文件夹名folder_new
         folder_new = ''
@@ -212,8 +213,7 @@ def rename_folder(jav_file, logger, dict_for_standard, settings, sum_all_episode
                     pass
                 # 真的有一个同名的文件夹了
                 else:
-                    logger.record_fail(f'重命名文件夹失败，已存在相同文件夹：{dir_new}\n')
-                    raise FileExistsError    # 【终止对该jav的整理】
+                    raise FileExistsError(f'重命名文件夹失败，已存在相同文件夹：{dir_new}')    # 【终止对该jav的整理】
                 print('    >重命名文件夹完成')
         # 不是独立的文件夹，建立独立的文件夹
         else:
@@ -234,8 +234,7 @@ def rename_folder(jav_file, logger, dict_for_standard, settings, sum_all_episode
                 jav_file.dir = path_separate_folder                # 【更新】jav.dir
             # 里面已有“avop-127.mp4”，这不是它的家。
             else:
-                logger.record_fail(f'创建独立文件夹失败，已存在相同的视频文件：{path_new}\n')
-                raise FileExistsError    # 【终止对该jav的整理】
+                raise FileExistsError(f'创建独立文件夹失败，已存在相同的视频文件：{path_new}')    # 【终止对该jav的整理】
 
 
 # 功能：6为当前jav收集演员头像到“.actors”文件夹中
@@ -270,17 +269,16 @@ def collect_sculpture(list_actors, dir_current):
 
 # 功能：7归类影片，针对文件夹（如果已进行第2操作，第7操作不会进行，因为用户只需要归类视频文件，不需要管文件夹）
 # 参数：设置settings，处理的影片jav，该车牌总共多少cd num_all_episodes，
-#      归类的目标目录路径dir_classify_target，当前处理的文件夹路径dir_current，命名信息dict_for_standard
-# 返回：处理的影片jav（所在文件夹路径改变）、已失败次数num_fail
+#      当前处理的文件夹路径dir_current，命名信息dict_for_standard
+# 返回：处理的影片jav（所在文件夹路径改变）
 # 辅助：os.exists, os.rename, os.makedirs，
-def classify_folder(jav_file, num_fail, settings, dict_for_standard, dir_classify_target, dir_current, num_all_episodes):
+def classify_folder(jav_file, settings, dict_for_standard, dir_current, num_all_episodes):
     if settings.bool_classify and settings.bool_classify_folder and jav_file.episode == num_all_episodes:  # 需要移动文件夹，且，是该影片的最后一集
         # 用户选择的文件夹是一部影片的独立文件夹，为了避免在这个文件夹里又生成新的归类文件夹
-        if jav_file.is_in_separate_folder and dir_classify_target.startswith(dir_current):
-            print('    >无法归类，请选择该文件夹的上级文件夹作它的归类根目录')
-            return num_fail
+        if jav_file.is_in_separate_folder and settings.dir_classify_target.startswith(dir_current):
+            raise TooManyDirectoryLevelsError(f'无法归类，不建议在当前文件夹【{dir_current}】内再新建归类文件夹，请选择该上级文件夹重新整理: ')
         # 归类放置的目标文件夹
-        dir_dest = f'{dir_classify_target}{sep}'
+        dir_dest = f'{settings.dir_classify_target}{sep}'
         # 移动的目标文件夹
         for j in settings.list_classify_basis:
             dir_dest = f'{dir_dest}{dict_for_standard[j].rstrip(" .")}'  # 【临时变量】 文件夹移动的目标上级文件夹  C:\Users\JuneRain\Desktop\测试文件夹\1\葵司\
@@ -298,7 +296,4 @@ def classify_folder(jav_file, num_fail, settings, dict_for_standard, dir_classif
             print('    >归类文件夹完成')
         # 用户已经有了这个文件夹，可能以前处理过同车牌的视频
         else:
-            num_fail += 1
-            record_fail(f'    >第{num_fail}个失败！归类失败，归类的目标位置已存在相同文件夹：{dir_new}\n')
-            raise FileExistsError
-    return num_fail
+            raise FileExistsError(f'归类失败，归类的目标位置已存在相同文件夹：{dir_new}')

@@ -43,3 +43,4 @@ class StandardStatusEnum(Enum):
     interrupted = 0
     success = 1
     remaining_problem_case_sensitive = 2
+    file_exist_error = 3

@@ -84,7 +84,7 @@ def scrape_from_arzon(car, cookies, proxy):
                 # 在该url_jav网页上查找简介
                 plotg = re.search(r'h2>作品紹介</h2>([\s\S]*?)</div>', html_jav_arzon)
                 # 成功找到plot
-                if str(plotg) != 'None':
+                if plotg:
                     plot_br = plotg.group(1)
                     plot = ''
                     for line in plot_br.split('<br />'):
@@ -97,7 +97,7 @@ def scrape_from_arzon(car, cookies, proxy):
         else:
             # arzon返回的页面实际是18岁验证
             adultg = re.search(r'１８歳未満', html_search_arzon)
-            if str(adultg) != 'None':
+            if adultg:
                 cookies = steal_arzon_cookies(proxy)
                 continue
             # 不是成人验证，也没有简介

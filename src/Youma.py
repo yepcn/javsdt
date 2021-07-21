@@ -3,11 +3,12 @@ import os
 from shutil import copyfile
 from traceback import format_exc
 # ################################################# 相同 ###########################################################
-from Class.Settings import Settings
-from MyEnum import ScrapeStatusEnum
+from Class.Handler import Settings
+from MyEnum import ScrapeStatusEnum, StandardStatusEnum
 from Class.Logger import Logger
 from JavFile import JavFile
 from JavModel import JavModel
+from MyError import TooManyDirectoryLevelsError
 from Status import judge_exist_nfo, judge_separate_folder
 from User import choose_directory
 from Standard import rename_mp4, rename_folder, classify_files, classify_folder, prefect_jav_model_and_dict_for_standard
@@ -197,22 +198,15 @@ while input_key == '':
                 prefect_jav_model_and_dict_for_standard(jav_file, jav_model, settings, dict_for_standard)
 
                 # 1重命名视频
-                try:
-                    rename_mp4(jav_file, logger, settings, dict_for_standard)
-                except FileExistsError:
-                    continue
+                path_new = rename_mp4(jav_file, settings, dict_for_standard)
+                if path_new:
+                    logger.record_fail(f'请自行重命名大小写：', path_new)
 
                 # 2 归类影片，只针对视频文件和字幕文件。注意: 第2操作和下面（第3操作+第7操作）互斥，只能执行第2操作或（第3操作+第7操作）
-                try:
-                    classify_files(jav_file, logger, settings, dict_for_standard)
-                except FileExistsError:
-                    continue
+                classify_files(jav_file, settings, dict_for_standard)
 
                 # 3重命名文件夹。如果是针对“文件”归类（即第2步），这一步会被跳过，因为用户只需要归类视频文件，不需要管文件夹。
-                try:
-                    rename_folder(jav_file, logger, settings, dict_for_standard, sum_all_episodes)
-                except FileExistsError:
-                    continue
+                rename_folder(jav_file, settings, dict_for_standard, sum_all_episodes)
 
                 # 更新一下path_relative
                 logger.path_relative = f'{sep}{jav_file.path.replace(dir_choose, "")}'  # 影片的相对于所选文件夹的路径，用于报错
@@ -237,7 +231,7 @@ while input_key == '':
                             f'  <originaltitle>{jav_model.Car} {jav_model.Title}</originaltitle>\n'
                             f'  <director>{jav_model.Director}</director>\n'
                             f'  <rating>{jav_model.Score}</rating>\n'
-                            f'  <criticrating>{str(float(jav_model.Score) * 10)}</criticrating>\n'  # 烂番茄评分 用上面的评分*10
+                            f'  <criticrating>{float(jav_model.Score) * 10}</criticrating>\n'  # 烂番茄评分 用上面的评分*10
                             f'  <year>{jav_model.Release[0:4]}</year>\n'
                             f'  <mpaa>NC-17</mpaa>\n'
                             f'  <customrating>NC-17</customrating>\n'
@@ -260,7 +254,7 @@ while input_key == '':
                             f.write(f'  <genre>片商:{jav_model.Studio}</genre>\n')
                         if list_extra_genres:
                             for i in list_extra_genres:
-                                f.write(f'  <genre>{jav_model.Genres}</genre>\n')
+                                f.write(f'  <genre>{dict_for_standard[i]}</genre>\n')
                     # 需要将特征写入tag
                     if settings.bool_tag:
                         for i in genres:
@@ -358,14 +352,14 @@ while input_key == '':
                         collect_sculpture(jav_model.Actors, jav_file.dir)
 
                 # 7归类影片，针对文件夹【相同】
-                try:
-                    num_temp = classify_folder(jav_file, no_fail, settings, dict_for_standard, dir_classify_target,
-                                               dir_current, sum_all_episodes)
-                    no_fail = num_temp
-                except FileExistsError:
-                    no_fail += 1
-                    continue
+                classify_folder(jav_file, settings, dict_for_standard, dir_current, sum_all_episodes)
 
+            except FileExistsError as e:
+                logger.record_fail(str(e))
+                continue
+            except TooManyDirectoryLevelsError as e:
+                logger.record_fail(str(e))
+                continue
             except:
                 logger.record_fail(f'发生错误，如一直在该影片报错请截图并联系作者: {format_exc()}\n')
                 continue  # 【退出对该jav的整理】

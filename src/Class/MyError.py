@@ -1,0 +1,2 @@
+class TooManyDirectoryLevelsError(Exception):
+    pass

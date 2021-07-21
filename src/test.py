@@ -11,7 +11,6 @@ import os
 # dict = {'A': 'S', }
 # change_dict(dict)
 # print(dict)
-from MyEnum import MsgTypeEnum
 
 
 # def change_int(int_a):
@@ -21,4 +20,23 @@ from MyEnum import MsgTypeEnum
 # change_int(int_b)
 # print(int_b)
 
-print(MsgTypeEnum.测试.name)
+#
+#
+# try:
+#     test()
+# except FileExistsError as e:
+#     print(f"已存在{e}" )
+
+
+class MyError(Exception):
+   pass
+
+def test():
+    raise MyError("我的电脑")
+
+
+
+try:
+    test()
+except MyError as e:
+    print(f"已存在{e}" )

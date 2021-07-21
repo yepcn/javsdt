@@ -126,7 +126,7 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
     # 发行商
     if not jav_model.Publisher:
         publisherg = re.search(r'rel="tag">(.+?)</a> &nbsp;<span id="label_', html_jav_library)
-        jav_model.Publisher = publisherg.group(1) if str(publisherg) != 'None' else ''
+        jav_model.Publisher = publisherg.group(1) if publisherg else ''
     # 演员们
     if not jav_model.Actors:
         jav_model.Actors = re.findall(r'star\.php.+?>(.+?)<', html_jav_library)
