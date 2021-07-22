@@ -5,7 +5,6 @@ from shutil import copyfile
 from xml.etree.ElementTree import parse, ParseError
 
 
-
 # 功能：如果需要为kodi整理头像，则先检查“演员头像for kodi.ini”、“演员头像”文件夹是否存在; 检查 归类根目录 的合法性
 # 参数：是否需要整理头像，用户自定义的归类根目录，用户选择整理的文件夹路径
 # 返回：归类根目录路径
@@ -23,31 +22,36 @@ def check_actors(self):
                 input('\n请打开“【ini】重新创建ini.exe”创建丢失的程序组件!')
 
 
-def judge_subtitle_and_divulge(jav_file, settings, dict_for_user, dir_current, list_subtitle_words_in_filename, list_divulge_words_in_filename):
-    # 判断是否有中字的特征，条件有三满足其一即可: 1有外挂字幕 2文件名中含有“-C”之类的字眼 3旧的nfo中已经记录了它的中字特征
-    if jav_file.subtitle:
-        bool_subtitle = True  # 判定成功
-        dict_for_user['是否中字'] = settings.custom_subtitle_expression  # '是否中字'这一命名元素被激活
-    else:
-        bool_subtitle = judge_exist_subtitle(dir_current, jav_file.name_no_ext, list_subtitle_words_in_filename)
-        dict_for_user['是否中字'] = settings.custom_subtitle_expression if bool_subtitle else ''
-    # 判断是否是无码流出的作品，同理
-    bool_divulge = judge_exist_divulge(dir_current, jav_file.name_no_ext, list_divulge_words_in_filename)
-    dict_for_user['是否流出'] = settings.custom_divulge_expression if bool_divulge else ''
-    return bool_subtitle, bool_divulge
-
-
-# 功能：得到素人车牌集合
-# 参数：无
-# 返回：素人车牌list
+# 功能：判断当前一级文件夹是否含有nfo文件
+# 参数：这层文件夹下的文件们
+# 返回：True
 # 辅助：无
-def get_suren_cars():
-    try:
-        with open('StaticFiles/【素人车牌】.txt', 'r', encoding="utf-8") as f:
-            list_suren_cars = list(f)
-    except:
-        input('【素人车牌】.txt读取失败！')
-    list_suren_cars = [i.strip().upper() for i in list_suren_cars if i != '\n']
-    # print(list_suren_cars)
-    return list_suren_cars
+def judge_exist_nfo(list_files):
+    for file in list_files[::-1]:
+        if file.endswith('.nfo'):
+            return True
+    return False
 
+
+# 功能：判断是否有除了“.actors”"extrafanrt”外的其他文件夹（如果有的话，说明当前文件夹不是jav的独立文件夹）
+# 参数：文件夹list
+# 返回：True
+# 辅助：无
+def judge_exist_extra_folders(list_folders):
+    for folder in list_folders:
+        if folder != '.actors' and folder != 'extrafanart':
+            return True
+    return False
+
+
+# 功能：判定影片所在文件夹是否是独立文件夹，独立文件夹是指该文件夹仅用来存放该影片，而不是大杂烩文件夹
+# 参数：len_dict_car_pref 当前所处文件夹包含的车牌数量, sum_videos_include(no_current 已是-)当前文件夹中视频的数量，可能有视频不是jav,
+#      len_list_jav_struct当前所处文件夹包含的、需要整理的jav的结构体数量, list_sub_dirs当前所处文件夹包含的子文件夹们
+# 返回：True
+# 辅助：judge_exist_extra_folders
+def judge_separate_folder(len_dict_car_pref, sum_videos_include, len_list_jav_files, list_sub_dirs):
+    # 当前文件夹下，车牌不止一个；还有其他非jav视频；有其他文件夹，除了演员头像文件夹“.actors”和额外剧照文件夹“extrafanart”；
+    if len_dict_car_pref > 1 or sum_videos_include > len_list_jav_files or judge_exist_extra_folders(list_sub_dirs):
+        return False  # 不是独立的文件夹
+    else:
+        return True  # 这一层文件夹是这部jav的独立文件夹

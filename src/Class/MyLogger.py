@@ -53,6 +53,24 @@ class Logger(object):
         txt.close()
         print(msg, end='')
 
+    def print_end(self, dir_choose):
+        if self.no_fail > 0:
+            print('失败', self.no_fail, '个!  ', dir_choose, '\n')
+            line = -1
+            with open('【可删除】失败.txt', 'r', encoding="utf-8") as f:
+                content = list(f)
+            while 1:
+                if content[line].startswith('已'):
+                    break
+                line -= 1
+            for i in range(line + 1, 0):
+                print(content[i], end='')
+            print('\n“【可删除】失败.txt”已记录错误\n')
+        else:
+            print(' “0”失败！  ', dir_choose, '\n')
+        if self.no_warn > 0:
+            print('“警告.txt”还记录了', self.no_warn, '个警告信息！\n')
+
 
 # 功能：记录旧文件名
 # 参数：新文件名，旧文件名
