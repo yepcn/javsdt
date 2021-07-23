@@ -38,7 +38,7 @@ def find_car_library(file, list_suren_car):
 # 参数：大写后的视频文件名，素人车牌list_suren_car    示例：AVOP-127.MP4    ['LUXU', 'MIUM']
 # 返回：发现的车牌    示例：AVOP-127
 # 辅助：re.search
-def find_car_bus(file, list_suren_car):
+def find_car_youma(file, list_suren_car):
     # car_pref 车牌前缀 ABP-，带横杠；car_suf，车牌后缀 123。
     # 先处理特例 T28 车牌
     if re.search(r'[^A-Z]?T28[-_ ]*\d\d+', file):
@@ -125,6 +125,6 @@ def find_car_suren(file, list_suren_car):
 
 
 def find_car_fc2(file):
-    subtitle_carg = re.search(r'FC2[^\d]*(\d+)', file_temp)  # 匹配字幕车牌
-    if subtitle_carg:
-        subtitle_car = f'FC2-{subtitle_carg.group(1)}'
+    subtitle_carg = re.search(r'FC2[^\d]*(\d+)', file)  # 匹配字幕车牌
+    subtitle_car = f'FC2-{subtitle_carg.group(1)}' if subtitle_carg else ''
+    return subtitle_car

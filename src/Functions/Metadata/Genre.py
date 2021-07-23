@@ -7,7 +7,7 @@ import xlrd
 # 参数：用户在用哪个exe（对应要在表格中取哪一列） ，简繁中文to_language   示例：Javbus有码 ，zh
 # 返回：优化的特征字典
 # 辅助：xlrd
-def better_dict_genre(website, to_language):
+def better_dict_genres(website, to_language):
     # 返回一个字典 {'伴侶': '招待小姐'}
     dict = {}
     # 使用哪一个网站的特征原数据 0 javdb，1 javlibrary， 2 javbus
@@ -32,6 +32,12 @@ def better_dict_genre(website, to_language):
         if list_row[col]:
             dict[list_row[col]] = list_row[col_chinese]    # 原特征 和 优化后的中文特征 对应
     return dict
+
+
+def better_dict_youma_genres(to_language):
+    return better_dict_genres("javdb", to_language), \
+           better_dict_genres("javlibrary", to_language), \
+           better_dict_genres("javbus", to_language),
 
 # test
 # print(better_dict_genre('Javlibrary', 'cht'))

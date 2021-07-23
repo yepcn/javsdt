@@ -7,13 +7,12 @@ from xml.etree.ElementTree import parse, ParseError
 
 
 from MyLogger import record_video_old
-from MyEnum import StandardStatusEnum
 from MyError import TooManyDirectoryLevelsError
 from XML import replace_xml_win
 from aip import AipBodyAnalysis
 
 # 设置
-from Car import find_car_library, find_car_fc2
+from Car import find_car_library, find_car_fc2, find_car_youma
 from MyJav import JavFile
 
 
@@ -28,7 +27,7 @@ class Handler(object):
         # 是否 收集nfo
         self.bool_nfo = True if config_settings.get("收集nfo", "是否收集nfo？") == '是' else False
         # 自定义 nfo中title的格式
-        self.list_name_nfo_title = config_settings.get("收集nfo", "nfo中title的格式").replace('标题', '完整标题', 1).split('+')
+        self._list_name_nfo_title = config_settings.get("收集nfo", "nfo中title的格式").replace('标题', '完整标题', 1).split('+')
         # 是否 去除 标题 末尾可能存在的演员姓名
         self.bool_strip_actors = True if config_settings.get("收集nfo", "是否去除标题末尾的演员姓名？") == '是' else False
         # 自定义 将系列、片商等元素作为特征，因为emby不会直接在影片介绍页面上显示片商，也不会读取系列set
@@ -52,12 +51,12 @@ class Handler(object):
         # 是否 重命名视频所在文件夹，或者为它创建独立文件夹
         self._bool_rename_folder = True if config_settings.get("修改文件夹", "是否重命名或创建独立文件夹？") == '是' else False
         # 自定义 新的文件夹名  示例：['车牌', '【', '全部演员', '】']
-        self.list_rename_folder = config_settings.get("修改文件夹", "新文件夹的格式").split('+')
+        self._list_rename_folder = config_settings.get("修改文件夹", "新文件夹的格式").split('+')
         ########################################################## 归类 ################################################
         # 是否 归类jav
         self.bool_classify = True if config_settings.get("归类影片", "是否归类影片？") == '是' else False
         # 是否 针对“文件夹”归类jav，“否”即针对“文件”
-        self.bool_classify_folder = True if config_settings.get("归类影片", "针对文件还是文件夹？") == '文件夹' else False
+        self._bool_classify_folder = True if config_settings.get("归类影片", "针对文件还是文件夹？") == '文件夹' else False
         # 自定义 路径 归类的jav放到哪
         self._custom_classify_target_dir = config_settings.get("归类影片", "归类的根目录")
         # 自定义 jav按什么类别标准来归类 比如：影片类型\全部演员
@@ -66,9 +65,9 @@ class Handler(object):
         # 是否 下载图片
         self.bool_jpg = True if config_settings.get("下载封面", "是否下载封面海报？") == '是' else False
         # 自定义 命名 大封面fanart
-        self.list_name_fanart = config_settings.get("下载封面", "DVD封面的格式").split('+')
+        self._list_name_fanart = config_settings.get("下载封面", "DVD封面的格式").split('+')
         # 自定义 命名 小海报poster
-        self.list_name_poster = config_settings.get("下载封面", "海报的格式").split('+')
+        self._list_name_poster = config_settings.get("下载封面", "海报的格式").split('+')
         # 是否 如果视频有“中字”，给poster的左上角加上“中文字幕”的斜杠
         self.bool_watermark_subtitle = True if config_settings.get("下载封面", "是否为海报加上中文字幕条幅？") == '是' else False
         # 是否 如果视频是“无码流出”，给poster的右上角加上“无码流出”的斜杠
@@ -78,7 +77,7 @@ class Handler(object):
         self.bool_rename_subtitle = True if config_settings.get("字幕文件", "是否重命名已有的字幕文件？") == '是' else False
         ###################################################### kodi #######################################################
         # 是否 收集演员头像
-        self.bool_sculpture = True if config_settings.get("kodi专用", "是否收集演员头像？") == '是' else False
+        self._bool_sculpture = True if config_settings.get("kodi专用", "是否收集演员头像？") == '是' else False
         # 是否 对于多cd的影片，kodi只需要一份图片和nfo
         self.bool_cd_only = True if config_settings.get("kodi专用", "是否对多cd只收集一份图片和nfo？") == '是' else False
         ###################################################### 代理 ########################################################
@@ -147,7 +146,8 @@ class Handler(object):
         self._ai_ak = config_settings.get("百度人体分析", "api key")
         self._al_sk = config_settings.get("百度人体分析", "secret key")
 
-        self.dict_for_standard, self.list_classify_basis = self.get_dict_for_standard()
+
+        ######################################## 其它 ####################################################
         # 素人番号: 得到事先设置的素人番号，让程序能跳过它们
         self.list_suren_cars = self.get_suren_cars()
         # 是否需要重命名文件夹
@@ -160,20 +160,25 @@ class Handler(object):
         self.no_current = 0
         # 存放: 每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
         self.dict_car_episode = {}
-        
+
         self.sum_all_videos = 0
 
-    def init_dict_and_no(self):
+        self.dict_for_standard = {}
+
+        self.list_classify_basis = []
+
+    def rest(self):
         self.dict_subtitle_file = {}
         self.no_current = 0
         self.dict_car_episode = {}
         self.sum_all_videos = 0
+        self.list_classify_basis = []
 
     # #########################[修改文件夹]##############################
     # 是否需要重命名文件夹或者创建新的文件夹
     def judge_need_rename_folder(self):
         if self.bool_classify:  # 如果需要归类
-            if self.bool_classify_folder:  # 并且是针对文件夹
+            if self._bool_classify_folder:  # 并且是针对文件夹
                 return True  # 那么必须重命名文件夹或者创建新的文件夹
         else:  # 不需要归类
             if self._bool_rename_folder:  # 但是用户本来就在ini中写了要重命名文件夹
@@ -183,7 +188,7 @@ class Handler(object):
     # #########################[归类影片]##############################
 
     # 功能：检查 归类根目录 的合法性
-    # 参数：用户自定义的归类根目录，用户选择整理的文件夹路径
+    # 参数：用户选择整理的文件夹路径
     # 返回：归类根目录路径
     # 辅助：os.sep，os.system
     def check_classify_target_directory(self, dir_choose):
@@ -209,13 +214,18 @@ class Handler(object):
             self.dir_classify_target = ''
 
     # #########################[百度人体分析]##############################
+    # 百度翻译启动
     def start_body_analysis(self):
         if self.bool_face:
             return AipBodyAnalysis(self._al_id, self._ai_ak, self._al_sk)
         else:
             return None
 
-    def get_dict_subtitle_file(self, list_sub_files):
+    # 功能：收集文件中的字幕文件，存储在dict_subtitle_file
+    # 参数：list_sub_files（当前文件夹的）子文件们
+    # 返回：无；更新self.dict_subtitle_file
+    # 辅助：find_car_youma, find_car_fc2
+    def init_dict_subtitle_file(self, list_sub_files):
         for file_raw in list_sub_files:
             file_temp = file_raw.upper()
             if file_temp.endswith(('.SRT', '.VTT', '.ASS', '.SSA', '.SUB', '.SMI',)):
@@ -227,7 +237,7 @@ class Handler(object):
                     for word in self._list_surplus_words_in_filename:
                         file_temp = file_temp.replace(word, '')
                     # 得到字幕文件名中的车牌
-                    subtitle_car = find_car_library(file_temp, self.list_suren_cars)
+                    subtitle_car = find_car_youma(file_temp, self.list_suren_cars)
                 else:
                     # 仅处理fc2
                     if 'FC2' not in file_temp:
@@ -238,10 +248,12 @@ class Handler(object):
                 if subtitle_car:
                     self.dict_subtitle_file[file_raw] = subtitle_car
 
-
-    # dir_current_relative当前所处文件夹 相对于 所选文件夹 的路径，主要用于报错
+    # 功能：发现文件中的jav视频文件，存储在list_jav_files
+    # 参数：list_sub_files（当前文件夹的）子文件们
+    # 返回：list_jav_files；更新self.dict_car_episode
+    # 辅助：JavFile
     def get_list_jav_files(self, list_sub_files, dir_current, dir_current_relative):
-        list_jav_files = []  # 存放: 需要整理的jav的结构体
+        list_jav_files = []  # 存放: 需要整理的jav_file
         for file_raw in list_sub_files:
             file_temp = file_raw.upper()
             if file_temp.endswith(self._tuple_video_types) and not file_temp.startswith('.'):
@@ -270,27 +282,23 @@ class Handler(object):
                     print(f'>>无法处理: {dir_current_relative}{sep}{file_raw}')
         return list_jav_files
 
-    # 功能：所选文件夹总共有多少个视频文件
-    # 参数：用户选择整理的文件夹路径dir_choose
-    # 返回：无
-    # 辅助：os.walk
-    def count_num_videos(self, dir_choose, list_jav_files):
-        for dir_current, list_sub_dirs, list_sub_files in os.walk(dir_choose):
-            for file_raw in list_sub_files:
-                file_temp = file_raw.upper()
-                if file_temp.endswith(self._tuple_video_types) and not file_temp.startswith('.'):
-                    self.sum_all_videos += 1
+    # 功能：处理多视频文件的问题，（1）所选文件夹总共有多少个视频文件，包括非jav文件，主要用于显示进度（2）同一车牌有多少cd，用于cd2...命名
+    # 参数：list_jav_files
+    # 返回：无；更新self.sum_all_videos
+    # 辅助：无
+    def count_num_videos(self, list_jav_files):
+        self.sum_all_videos = self.no_current
         for jav_file in list_jav_files:
             jav_file.sum_all_episodes = self.dict_car_episode[jav_file.car]
 
-    # 功能：完善用于命名的dict_data，如果用户自定义的各种命名公式中有dict_data未包含的元素，则添加进dict_data。
-    #      将可能比较复杂的list_classify_basis按“+”“\”切割好，准备用于组装后面的归类路径。
-    # 参数：用户自定义的各种命名公式list
-    # 返回：存储命名信息的dict_data， 切割好的归类标准list_classify_basis
+    # 功能：（1）完善用于给用户命名的dict_for_standard，如果用户自定义的各种命名公式中有dict_for_standard未包含的元素，则添加。
+    #      （2）将_custom_classify_basis按“+”“\”切割好，准备用于组装后面的归类路径。
+    # 参数：无
+    # 返回：无；self.dict_for_standard，self.list_classify_basis
     # 辅助：os.sep
     def get_dict_for_standard(self):
         if self._pattern == '无码':
-            dict_for_standard = {'车牌': 'CBA-123',
+            self.dict_for_standard = {'车牌': 'CBA-123',
                                  '车牌前缀': 'CBA',
                                  '标题': '无码标题',
                                  '完整标题': '完整无码标题',
@@ -310,7 +318,7 @@ class Handler(object):
                                  '视频': 'CBA-123',  # 当前及未来的视频文件名，不带ext
                                  '原文件名': 'CBA-123', '原文件夹名': 'CBA-123', }
         elif self._pattern == '素人':
-            dict_for_standard = {'车牌': 'XYZ-123',
+            self.dict_for_standard = {'车牌': 'XYZ-123',
                                  '车牌前缀': 'XYZ',
                                  '标题': '素人标题',
                                  '完整标题': '完整素人标题',
@@ -330,7 +338,7 @@ class Handler(object):
                                  '视频': 'XYZ-123',  # 当前及未来的视频文件名，不带ext
                                  '原文件名': 'XYZ-123', '原文件夹名': 'XYZ-123', }
         elif self._pattern == 'fc2':
-            dict_for_standard = {'车牌': 'FC2-123',
+            self.dict_for_standard = {'车牌': 'FC2-123',
                                  '车牌前缀': 'FC2',
                                  '标题': 'FC2标题',
                                  '完整标题': '完整FC2标题',
@@ -350,7 +358,7 @@ class Handler(object):
                                  '视频': 'FC2-123',  # 当前及未来的视频文件名，不带ext
                                  '原文件名': 'FC2-123', '原文件夹名': 'FC2-123', }
         else:
-            dict_for_standard = {'车牌': 'ABC-123',
+            self.dict_for_standard = {'车牌': 'ABC-123',
                                  '车牌前缀': 'ABC',
                                  '标题': '有码标题',
                                  '完整标题': '完整有码标题',
@@ -370,42 +378,40 @@ class Handler(object):
                                  '视频': 'ABC-123',  # 当前及未来的视频文件名，不带ext
                                  '原文件名': 'ABC-123', '原文件夹名': 'ABC-123', }
         for i in self._list_extra_genres:
-            if i not in dict_for_standard:
-                dict_for_standard[i] = i
+            if i not in self.dict_for_standard:
+                self.dict_for_standard[i] = i
         for i in self._list_rename_video:
-            if i not in dict_for_standard:
-                dict_for_standard[i] = i
-        for i in self.list_rename_folder:
-            if i not in dict_for_standard:
-                dict_for_standard[i] = i
-        for i in self.list_name_nfo_title:
-            if i not in dict_for_standard:
-                dict_for_standard[i] = i
-        for i in self.list_name_fanart:
-            if i not in dict_for_standard:
-                dict_for_standard[i] = i
-        for i in self.list_name_poster:
-            if i not in dict_for_standard:
-                dict_for_standard[i] = i
-        list_classify_basis = []
+            if i not in self.dict_for_standard:
+                self.dict_for_standard[i] = i
+        for i in self._list_rename_folder:
+            if i not in self.dict_for_standard:
+                self.dict_for_standard[i] = i
+        for i in self._list_name_nfo_title:
+            if i not in self.dict_for_standard:
+                self.dict_for_standard[i] = i
+        for i in self._list_name_fanart:
+            if i not in self.dict_for_standard:
+                self.dict_for_standard[i] = i
+        for i in self._list_name_poster:
+            if i not in self.dict_for_standard:
+                self.dict_for_standard[i] = i
+        # 归类路径的组装公式
         for i in self._custom_classify_basis.split('\\'):
             for j in i.split('+'):
-                if j not in dict_for_standard:
-                    dict_for_standard[j] = j
-                list_classify_basis.append(j)
-            list_classify_basis.append(sep)
-        return dict_for_standard, list_classify_basis
+                if j not in self.dict_for_standard:
+                    self.dict_for_standard[j] = j
+                self.list_classify_basis.append(j)
+            self.list_classify_basis.append(sep)
 
     # 功能：根据【原文件名】和《已存在的、之前整理的nfo》，判断当前jav是否有“中文字幕”
     # 参数：①当前jav所处文件夹路径dir_current ②jav文件名不带格式后缀name_no_ext，
-    #      ③如果【原文件名】包含list_subtitle_character中的元素即判断有“中文字幕”,
     # 返回：True
     # 辅助：os.path.exists，xml.etree.ElementTree.parse，xml.etree.ElementTree.ParseError
-    def judge_exist_subtitle(self, dir_current, name_no_ext, list_subtitle_character):
+    def judge_exist_subtitle(self, dir_current, name_no_ext):
         # 去除 '-CD' 和 '-CARIB'对 '-C'判断中字的影响
         name_no_ext = name_no_ext.upper().replace('-CD', '').replace('-CARIB', '')
         # 如果原文件名包含“-c、-C、中字”这些字符
-        for i in list_subtitle_character:
+        for i in self._list_subtitle_words_in_filename:
             if i in name_no_ext:
                 return True
         # 先前整理过的nfo中有 ‘中文字幕’这个Genre
@@ -421,13 +427,12 @@ class Handler(object):
         return False
 
     # 功能：根据【原文件名】和《已存在的、之前整理的nfo》，判断当前jav是否有“无码流出”
-    # 参数：①当前jav所处文件夹路径dir_current ②jav文件名不带格式后缀name_no_ext，
-    #      ③如果【原文件名】包含list_divulge_character中的元素即判断有“中文字幕”,
+    # 参数：①当前jav所处文件夹路径dir_current ②jav文件名不带格式后缀name_no_ext
     # 返回：True
     # 辅助：os.path.exists，xml.etree.ElementTree.parse，xml.etree.ElementTree.ParseError
-    def judge_exist_divulge(dir_current, name_no_ext, list_divulge_character):
+    def judge_exist_divulge(self, dir_current, name_no_ext):
         # 如果原文件名包含“-c、-C、中字”这些字符
-        for i in list_divulge_character:
+        for i in self._list_divulge_words_in_filename:
             if i in name_no_ext:
                 return True
         # 先前整理过的nfo中有 ‘中文字幕’这个Genre
@@ -442,70 +447,78 @@ class Handler(object):
                     return True
         return False
 
+    # 功能：判断当前jav_file是否有“中文字幕”，是否有“无码流出”
+    # 参数：jav_file 处理的jav视频文件对象
+    # 返回：无；更新jav_file
+    # 辅助：无
     def judge_subtitle_and_divulge(self, jav_file):
         # 判断是否有中字的特征，条件有三满足其一即可: 1有外挂字幕 2文件名中含有“-C”之类的字眼 3旧的nfo中已经记录了它的中字特征
         if jav_file.subtitle:
             jav_file.is_subtitle = True  # 判定成功
         else:
-            jav_file.is_subtitle = self.judge_exist_subtitle(jav_file.dir_current, jav_file.name_no_ext, self.list_subtitle_words_in_filename)
+            jav_file.is_subtitle = self.judge_exist_subtitle(jav_file.dir_current, jav_file.name_no_ext)
         # 判断是否是无码流出的作品，同理
-        jav_file.is_divulge = self.judge_exist_divulge(jav_file.dir_current, jav_file.name_no_ext, self.list_divulge_words_in_filename)
+        jav_file.is_divulge = self.judge_exist_divulge(jav_file.dir_current, jav_file.name_no_ext)
 
-    def prefect_jav_model_and_dict_for_standard(self, jav_file, jav_model, dict_for_standard):
+    # 功能：用jav_file、jav_model中的原始数据完善dict_for_standard
+    # 参数：jav_file 处理的jav视频文件对象，jav_model 保存jav元数据的对象
+    # 返回：无；更新dict_for_standard
+    # 辅助：replace_xml_win，replace_xml_win
+    def prefect_jav_model_and_dict_for_standard(self, jav_file, jav_model):
         # 是否中字 是否无码流出
         self.judge_subtitle_and_divulge(jav_file)
         # '是否中字'这一命名元素被激活
-        dict_for_standard['是否中字'] = self.custom_subtitle_expression if jav_file.is_subtitle else ''
-        dict_for_standard['是否流出'] = self.custom_divulge_expression if jav_file.is_divulge else ''
+        self.dict_for_standard['是否中字'] = self.custom_subtitle_expression if jav_file.is_subtitle else ''
+        self.dict_for_standard['是否流出'] = self.custom_divulge_expression if jav_file.is_divulge else ''
         # 车牌
-        dict_for_standard['车牌'] = jav_model.Car  # car可能发生了变化
-        dict_for_standard['车牌前缀'] = jav_model.Car.split('-')[0]
+        self.dict_for_standard['车牌'] = jav_model.Car  # car可能发生了变化
+        self.dict_for_standard['车牌前缀'] = jav_model.Car.split('-')[0]
         # 日期
-        dict_for_standard['发行年月日'] = jav_model.Release
-        dict_for_standard['发行年份'] = jav_model.Release[0:4]
-        dict_for_standard['月'] = jav_model.Release[5:7]
-        dict_for_standard['日'] = jav_model.Release[8:10]
+        self.dict_for_standard['发行年月日'] = jav_model.Release
+        self.dict_for_standard['发行年份'] = jav_model.Release[0:4]
+        self.dict_for_standard['月'] = jav_model.Release[5:7]
+        self.dict_for_standard['日'] = jav_model.Release[8:10]
         # 演职人员
-        dict_for_standard['片长'] = jav_model.Runtime
-        dict_for_standard['导演'] = replace_xml_win(jav_model.Director) if jav_model.Director else '有码导演'
+        self.dict_for_standard['片长'] = jav_model.Runtime
+        self.dict_for_standard['导演'] = replace_xml_win(jav_model.Director) if jav_model.Director else '有码导演'
         # 公司
-        dict_for_standard['发行商'] = replace_xml_win(jav_model.Publisher) if jav_model.Publisher else '有码发行商'
-        dict_for_standard['制作商'] = replace_xml_win(jav_model.Studio) if jav_model.Studio else '有码制作商'
+        self.dict_for_standard['发行商'] = replace_xml_win(jav_model.Publisher) if jav_model.Publisher else '有码发行商'
+        self.dict_for_standard['制作商'] = replace_xml_win(jav_model.Studio) if jav_model.Studio else '有码制作商'
         #  和 第一个演员
         if jav_model.Acotrs:
             if len(jav_model.Acotrs) > 7:
-                dict_for_standard['全部演员'] = ' '.join(jav_model.Acotrs[:7])
+                self.dict_for_standard['全部演员'] = ' '.join(jav_model.Acotrs[:7])
             else:
-                dict_for_standard['全部演员'] = ' '.join(jav_model.Acotrs)
-            dict_for_standard['首个演员'] = jav_model.Acotrs[0]
+                self.dict_for_standard['全部演员'] = ' '.join(jav_model.Acotrs)
+            self.dict_for_standard['首个演员'] = jav_model.Acotrs[0]
         else:
-            dict_for_standard['首个演员'] = dict_for_standard['全部演员'] = '有码演员'
+            self.dict_for_standard['首个演员'] = self.dict_for_standard['全部演员'] = '有码演员'
         # 处理影片的标题过长  给用户重命名用的标题是缩减过的，nfo中是“完整标题”，但用户在ini中只用写“标题”
-        dict_for_standard['完整标题'] = replace_xml_win(jav_model.Title)
-        if len(dict_for_standard['完整标题']) > self.int_title_len:
-            dict_for_standard['标题'] = dict_for_standard['完整标题'][:self.int_title_len]
+        self.dict_for_standard['完整标题'] = replace_xml_win(jav_model.Title)
+        if len(self.dict_for_standard['完整标题']) > self.int_title_len:
+            self.dict_for_standard['标题'] = self.dict_for_standard['完整标题'][:self.int_title_len]
         else:
-            dict_for_standard['标题'] = dict_for_standard['完整标题']
+            self.dict_for_standard['标题'] = self.dict_for_standard['完整标题']
         # 有些用户需要删去 标题末尾 可能存在的 演员姓名
-        if self.bool_strip_actors and dict_for_standard['标题'].endswith(dict_for_standard['全部演员']):
-            dict_for_standard['标题'] = dict_for_standard['标题'][:-len(dict_for_standard['全部演员'])].strip()
-        dict_for_standard['评分'] = jav_model.Score
-        dict_for_standard['系列'] = jav_model.Series if jav_model.Series else '有码系列'
-        dict_for_standard['视频'] = dict_for_standard['原文件名'] = jav_file.name_no_ext  # dict_for_standard['视频']，先定义为原文件名，即将发生变化。
-        dict_for_standard['原文件夹名'] = jav_file.folder
+        if self.bool_strip_actors and self.dict_for_standard['标题'].endswith(self.dict_for_standard['全部演员']):
+            self.dict_for_standard['标题'] = self.dict_for_standard['标题'][:-len(self.dict_for_standard['全部演员'])].strip()
+        self.dict_for_standard['评分'] = jav_model.Score
+        self.dict_for_standard['系列'] = jav_model.Series if jav_model.Series else '有码系列'
+        self.dict_for_standard['视频'] = self.dict_for_standard['原文件名'] = jav_file.name_no_ext  # dict_for_standard['视频']，先定义为原文件名，即将发生变化。
+        self.dict_for_standard['原文件夹名'] = jav_file.folder
 
     # 功能：1重命名视频(jav_file和dict_for_standard发生改变）
     # 参数：设置settings，命名信息dict_for_standard，处理的影片jav
-    # 返回：path_return，重命名操作可能因为139行不成功，返回path_return告知主程序提醒用户重新整理
+    # 返回：path_return，重命名操作可能不成功，返回path_return告知主程序提醒用户处理
     # 辅助：os.exists, os.rename, record_video_old, record_fail
-    def rename_mp4(self, jav_file, dict_for_standard):
+    def rename_mp4(self, jav_file):
         # 如果重命名操作不成功，将path_new赋值给path_return，提醒用户自行重命名
         path_return = ''
         if self.bool_rename_video:
             # 构造新文件名，不带文件类型后缀
             name_without_ext = ''
-            for j in self.list_name_video:
-                name_without_ext = f'{name_without_ext}{dict_for_standard[j]}'
+            for j in self._list_rename_video:
+                name_without_ext = f'{name_without_ext}{self.dict_for_standard[j]}'
             name_without_ext = f'{name_without_ext.strip()}{jav_file.cd}'  # 去除末尾空格，否则windows会自动删除空格，导致程序仍以为带空格
             path_new = f'{jav_file.dir}{sep}{name_without_ext}{jav_file.ext}'  # 【临时变量】path_new 视频文件的新路径
             # 一般情况，不存在同名视频文件
@@ -523,7 +536,7 @@ class Handler(object):
             # 存在目标文件，不是现在的文件。
             else:
                 raise FileExistsError(f'重命名影片失败，重复的影片，已经有相同文件名的视频了：{path_new}')    # 【终止对该jav的整理】
-            dict_for_standard['视频'] = name_without_ext      # 【更新】 dict_for_standard['视频']
+            self.dict_for_standard['视频'] = name_without_ext      # 【更新】 dict_for_standard['视频']
             jav_file.name = f'{name_without_ext}{jav_file.ext}'   # 【更新】jav.name，重命名操作可能不成功，但之后的操作仍然围绕成功的jav.name来命名
             print(f'    >修改文件名{jav_file.cd}完成')
             # 重命名字幕
@@ -540,13 +553,13 @@ class Handler(object):
     # 参数：设置settings，归类的目标目录路径dir_classify_target，命名信息dict_for_standard，处理的影片jav
     # 返回：处理的影片jav（所在文件夹路径改变）
     # 辅助：os.exists, os.rename, os.makedirs，
-    def classify_files(self, jav_file, dict_for_standard):
+    def classify_files(self, jav_file):
         # 如果需要归类，且不是针对文件夹来归类
-        if self.bool_classify and not self.bool_classify_folder:
+        if self.bool_classify and not self._bool_classify_folder:
             # 移动的目标文件夹路径
             dir_dest = f'{self.dir_classify_target}{sep}'
             for j in self.list_classify_basis:
-                dir_dest = f'{dir_dest}{dict_for_standard[j].strip()}'     # 【临时变量】归类的目标文件夹路径    C:\Users\JuneRain\Desktop\测试文件夹\葵司\
+                dir_dest = f'{dir_dest}{self.dict_for_standard[j].strip()}'     # 【临时变量】归类的目标文件夹路径    C:\Users\JuneRain\Desktop\测试文件夹\葵司\
             # 还不存在该文件夹，新建
             if not os.path.exists(dir_dest):
                 os.makedirs(dir_dest)
@@ -574,7 +587,7 @@ class Handler(object):
         if self.bool_rename_folder:
             # 构造 新文件夹名folder_new
             folder_new = ''
-            for j in self.list_name_folder:
+            for j in self._list_rename_folder:
                 folder_new = f'{folder_new}{self.dict_for_standard[j]}'
             folder_new = folder_new.rstrip(' .')  # 【临时变量】新的所在文件夹。去除末尾空格和“.”
             # 是独立文件夹，才会重命名文件夹
@@ -615,15 +628,15 @@ class Handler(object):
                     raise FileExistsError(f'创建独立文件夹失败，已存在相同的视频文件：{path_new}')    # 【终止对该jav的整理】
 
     # 功能：6为当前jav收集演员头像到“.actors”文件夹中
-    # 参数：演员们 list_actors，jav当前所处文件夹的路径dir_current
+    # 参数：jav_file 处理的jav视频文件对象，jav_model 保存jav元数据的对象
     # 返回：无
     # 辅助：os.path.exists，os.makedirs, configparser.RawConfigParser, shutil.copyfile
-    def collect_sculpture(self, list_actors, dir_current):
-        if handler.bool_sculpture and jav_file.episode == 1:
+    def collect_sculpture(self, jav_file, jav_model):
+        if self._bool_sculpture and jav_file.episode == 1:
             if jav_model.Actors[0] == '有码演员':
                 print('    >未知演员，无法收集头像')
             else:
-                for each_actor in list_actors:
+                for each_actor in jav_model.Actors:
                     path_exist_actor = f'演员头像{sep}{each_actor[0]}{sep}{each_actor}'  # 事先准备好的演员头像路径
                     if os.path.exists(f'{path_exist_actor}.jpg'):
                         pic_type = '.jpg'
@@ -640,7 +653,7 @@ class Handler(object):
                         config_actor.write(open('【缺失的演员头像统计For Kodi】.ini', "w", encoding='utf-8-sig'))
                         continue
                     # 已经收录了这个演员头像
-                    dir_dest_actor = f'{dir_current}{sep}.actors{sep}'  # 头像的目标文件夹
+                    dir_dest_actor = f'{jav_file.dir}{sep}.actors{sep}'  # 头像的目标文件夹
                     if not os.path.exists(dir_dest_actor):
                         os.makedirs(dir_dest_actor)
                     # 复制一份到“.actors”
@@ -648,21 +661,20 @@ class Handler(object):
                     print('    >演员头像收集完成：', each_actor)
 
     # 功能：7归类影片，针对文件夹（如果已进行第2操作，第7操作不会进行，因为用户只需要归类视频文件，不需要管文件夹）
-    # 参数：设置settings，处理的影片jav，该车牌总共多少cd num_all_episodes，
-    #      当前处理的文件夹路径dir_current，命名信息dict_for_standard
+    # 参数：jav_file 处理的jav视频文件对象
     # 返回：处理的影片jav（所在文件夹路径改变）
     # 辅助：os.exists, os.rename, os.makedirs，
-    def classify_folder(self, jav_file, dict_for_standard, dir_current):
+    def classify_folder(self, jav_file, ):
         # 需要移动文件夹，且，是该影片的最后一集
-        if self.bool_classify and self.bool_classify_folder and jav_file.episode == jav_file.num_all_episodes:
+        if self.bool_classify and self._bool_classify_folder and jav_file.episode == jav_file.num_all_episodes:
             # 用户选择的文件夹是一部影片的独立文件夹，为了避免在这个文件夹里又生成新的归类文件夹
-            if jav_file.is_in_separate_folder and self.dir_classify_target.startswith(dir_current):
-                raise TooManyDirectoryLevelsError(f'无法归类，不建议在当前文件夹【{dir_current}】内再新建归类文件夹，请选择该上级文件夹重新整理: ')
+            if jav_file.is_in_separate_folder and self.dir_classify_target.startswith(jav_file.dir):
+                raise TooManyDirectoryLevelsError(f'无法归类，不建议在当前文件夹内再新建文件夹')
             # 归类放置的目标文件夹
             dir_dest = f'{self.dir_classify_target}{sep}'
             # 移动的目标文件夹
             for j in self.list_classify_basis:
-                dir_dest = f'{dir_dest}{dict_for_standard[j].rstrip(" .")}'  # 【临时变量】 文件夹移动的目标上级文件夹  C:\Users\JuneRain\Desktop\测试文件夹\1\葵司\
+                dir_dest = f'{dir_dest}{self.dict_for_standard[j].rstrip(" .")}'  # 【临时变量】 文件夹移动的目标上级文件夹  C:\Users\JuneRain\Desktop\测试文件夹\1\葵司\
             dir_new = f'{dir_dest}{sep}{jav_file.folder}'  # 【临时变量】 文件夹移动的目标路径   C:\Users\JuneRain\Desktop\测试文件夹\1\葵司\【葵司】AVOP-127\
             # print(dir_new)
             # 还不存在归类的目标文件夹
@@ -694,6 +706,10 @@ class Handler(object):
         # print(list_suren_cars)
         return list_suren_cars
 
+    # 功能：写nfo
+    # 参数：jav_file 处理的jav视频文件对象，jav_model 保存jav元数据的对象，genres
+    # 返回：素人车牌list
+    # 辅助：无
     def write_nfo(self, jav_file, jav_model, genres):
         if self.bool_nfo:
             # 如果是为kodi准备的nfo，不需要多cd
@@ -703,7 +719,7 @@ class Handler(object):
                 path_nfo = f'{jav_file.dir}{sep}{jav_file.name_no_ext}.nfo'
             # nfo中tilte的写法
             title_in_nfo = ''
-            for i in self.list_name_nfo_title:
+            for i in self._list_name_nfo_title:
                 title_in_nfo += f'{title_in_nfo}{self.dict_for_standard[i]}'  # nfo中tilte的写法
             # 开始写入nfo，这nfo格式是参考的kodi的nfo
             f = open(path_nfo, 'w', encoding="utf-8")
@@ -769,7 +785,7 @@ class Handler(object):
             # fanart和poster路径
             path_fanart = f'{jav_file.dir}{sep}'
             path_poster = f'{jav_file.dir}{sep}'
-            for i in handler.list_name_fanart:
+            for i in handler._list_name_fanart:
                 path_fanart += f'{path_fanart}{dict_for_standard[i]}'
             for i in list_name_poster:
                 path_poster += f'{path_poster}{dict_for_standard[i]}'
@@ -861,7 +877,7 @@ class Handler(object):
     # 辅助：os.sep，os.path.exists，shutil.copyfile
     def check_actors(self):
         # 检查头像: 如果需要为kodi整理头像，先检查演员头像ini、头像文件夹是否存在。
-        if self.bool_sculpture:
+        if self._bool_sculpture:
             if not os.path.exists('演员头像'):
                 input('\n“演员头像”文件夹丢失！请把它放进exe的文件夹中！\n')
             if not os.path.exists('【缺失的演员头像统计For Kodi】.ini'):

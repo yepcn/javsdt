@@ -7,7 +7,7 @@ from Class.MyLogger import Logger
 from Class.MyJav import JavFile, JavModel
 from Class.MyError import TooManyDirectoryLevelsError
 from Functions.Progress.User import choose_directory
-from Functions.Metadata.Genre import better_dict_genre
+from Functions.Metadata.Genre import better_dict_genres, better_dict_youma_genres
 from Functions.Web.Arzon import steal_arzon_cookies, scrape_from_arzon
 from Functions.Web.Javbus import scrape_from_bus
 from Functions.Web.Javlibrary import scrape_from_library
@@ -33,28 +33,26 @@ sep = os.sep
 # arzon通行证: 如果需要从arzon获取日语简介，需要先获得合法的arzon网站的cookie，用于通过成人验证。
 cookie_arzon = steal_arzon_cookies(handler.proxy_arzon) if handler.bool_nfo else {}
 # 优化特征的字典
-dict_db_genres = better_dict_genre('Javdb', handler.to_language)
-dict_library_genres = better_dict_genre('Javlibrary', handler.to_language)
-dict_bus_genres = better_dict_genre('Javbus', handler.to_language)
+dict_db_genres, dict_library_genres, dict_bus_genres = better_dict_youma_genres(handler.to_language)
+# 用于记录失败次数、失败信息
+logger = Logger()
 # endregion
 
 # region（3）整理程序
 # 用户输入“回车”就继续选择文件夹整理
 input_key = ''
+while not input_key:
 
-while input_key == '':
-
-    # region （3.1）用户选择需整理的文件夹，校验归类的目标文件夹的合法性
-    # 用户: 选择需要整理的文件夹
+    # region （3.1）准备工作，用户选择需整理的文件夹，校验归类的目标文件夹的合法性
+    logger.rest()
+    handler.rest()
+    # 用户选择需要整理的文件夹
     dir_choose = choose_directory()
-    # 日志: 在txt中记录一下用户的这次操作，在某个时间选择了某个文件夹
-    logger = Logger()  # 用于记录失败次数、失败信息
+    # 在txt中记录一下用户的这次操作，在某个时间选择了某个文件夹
     logger.record_start(dir_choose)
-    # 归类: 用户自定义的归类根目录，如果不需要归类则为空
+    # 若用户需要归类，用户自定义的归类根目录，检查其是否可用
     handler.check_classify_target_directory(dir_choose)
     # endregion
-
-    handler.init_dict_and_no()
 
     # region （3.2）遍历所选文件夹内部进行处理
     print('...文件扫描开始...如果时间过长...请避开高峰期...\n')
@@ -62,23 +60,24 @@ while input_key == '':
     for dir_current, list_sub_dirs, list_sub_files in os.walk(dir_choose):
         # region （3.2.1）当前文件夹内包含jav及字幕文件的状况：有多少视频，其中多少jav，同一车牌多少cd，当前文件夹是不是独立文件夹
         # （3.2.1.1）什么文件都没有 | dir_current是已归类的目录，无需处理 | 跳过已存在nfo的文件夹，判断这一层文件夹中有没有nfo
+        dir_current_relative = dir_current[len(dir_choose):]    # 当前所处文件夹 相对于 所选文件夹 的路径，主要用于报错
         if not list_sub_files \
-                or '归类完成' in dir_current[len(dir_choose):] \
+                or '归类完成' in dir_current_relative \
                 or handler.judge_skip_exist_nfo(list_sub_files):
             continue
 
         # （3.2.1.2）判断文件是不是字幕文件，放入dict_subtitle_file中，字幕文件和车牌对应关系 {'c:\a\abc_123.srt': 'abc-123'}
-        handler.get_dict_subtitle_file(list_sub_files)
+        handler.init_dict_subtitle_file(list_sub_files)
         # （3.2.1.3）获取当前所处文件夹，子一级内，包含的jav，放入list_jav_files 存放: 需要整理的jav文件对象jav_file;
-        list_jav_files = handler.get_list_jav_files(list_sub_files, dir_current, dir_current[len(dir_choose):])
+        list_jav_files = handler.get_list_jav_files(list_sub_files, dir_current, dir_current_relative)
         # （3.2.1.4）没有jav，则跳出当前所处文件夹
         if not list_jav_files:
             continue
         # （3.2.1.5）判定当前所处文件夹是否是独立文件夹，独立文件夹是指该文件夹仅用来存放该影片，而不是大杂烩文件夹，是后期移动剪切操作的重要依据
         JavFile.is_in_separate_folder = handler.judge_separate_folder(len(list_jav_files), list_sub_dirs)
         # is_in_separate_folder是类属性，不是实例属性，修改类属性会将list_jav_files中的所有jav_file的is_in_separate_folder同步
-        # （3.2.1.6）所选文件夹总共有多少个视频文件，包括非jav文件，主要用于显示进度
-        handler.count_num_videos(dir_choose, list_jav_files)
+        # （3.2.1.6）处理“集”的问题，（1）所选文件夹总共有多少个视频文件，包括非jav文件，主要用于显示进度（2）同一车牌有多少cd，用于cd2...命名
+        handler.count_num_videos(list_jav_files)
         # endregion
 
         # region（3.2.2）开始处理每一部jav文件
@@ -202,7 +201,7 @@ while input_key == '':
         # endregion
     # endregion
 
-    # 完结撒花
+    # 当前所选文件夹完成
     print('\n当前文件夹完成，', end='')
     logger.print_end(dir_choose)
     input_key = input('回车继续选择文件夹整理: ')
