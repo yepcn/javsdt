@@ -154,6 +154,20 @@ class Handler(object):
         self.bool_rename_folder = self.judge_need_rename_folder()
 
         self.dir_classify_target = ''
+        # 字幕文件和车牌对应关系 {'c:\a\abc_123.srt': 'abc-123'}
+        self.dict_subtitle_file = {}
+        # 当前视频（包括非jav）的编号，用于显示进度、获取最大视频编号即当前文件夹内视频数量
+        self.no_current = 0
+        # 存放: 每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
+        self.dict_car_episode = {}
+        
+        self.sum_all_videos = 0
+
+    def init_dict_and_no(self):
+        self.dict_subtitle_file = {}
+        self.no_current = 0
+        self.dict_car_episode = {}
+        self.sum_all_videos = 0
 
     # #########################[修改文件夹]##############################
     # 是否需要重命名文件夹或者创建新的文件夹
@@ -161,13 +175,10 @@ class Handler(object):
         if self.bool_classify:  # 如果需要归类
             if self.bool_classify_folder:  # 并且是针对文件夹
                 return True  # 那么必须重命名文件夹或者创建新的文件夹
-            else:
-                return False  # 否则不会操作新文件夹
         else:  # 不需要归类
             if self._bool_rename_folder:  # 但是用户本来就在ini中写了要重命名文件夹
                 return True
-            else:
-                return False
+        return False
 
     # #########################[归类影片]##############################
 
@@ -205,7 +216,6 @@ class Handler(object):
             return None
 
     def get_dict_subtitle_file(self, list_sub_files):
-        dict_subtitle_file = {}
         for file_raw in list_sub_files:
             file_temp = file_raw.upper()
             if file_temp.endswith(('.SRT', '.VTT', '.ASS', '.SSA', '.SUB', '.SMI',)):
@@ -226,16 +236,16 @@ class Handler(object):
                     subtitle_car = find_car_fc2(file_temp)
                 # 将该字幕文件和其中的车牌对应到dict_subtitle_file中
                 if subtitle_car:
-                    dict_subtitle_file[file_raw] = subtitle_car
-        return dict_subtitle_file
+                    self.dict_subtitle_file[file_raw] = subtitle_car
 
-    def get_list_jav_files(self, list_sub_files, no_current, dict_subtitle_file, dir_current, dir_current_relative):
+
+    # dir_current_relative当前所处文件夹 相对于 所选文件夹 的路径，主要用于报错
+    def get_list_jav_files(self, list_sub_files, dir_current, dir_current_relative):
         list_jav_files = []  # 存放: 需要整理的jav的结构体
-        dict_car_episode = {}  # 存放: 每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
         for file_raw in list_sub_files:
             file_temp = file_raw.upper()
             if file_temp.endswith(self._tuple_video_types) and not file_temp.startswith('.'):
-                no_current += 1
+                self.no_current += 1
                 if 'FC2' in file_temp:
                     continue
                 for word in self._list_surplus_words_in_filename:
@@ -244,34 +254,34 @@ class Handler(object):
                 car = find_car_library(file_temp, self.list_suren_cars)
                 if car:
                     try:
-                        dict_car_episode[car] += 1  # 已经有这个车牌了，加一集cd
+                        self.dict_car_episode[car] += 1  # 已经有这个车牌了，加一集cd
                     except KeyError:
-                        dict_car_episode[car] = 1  # 这个新车牌有了第一集
+                        self.dict_car_episode[car] = 1  # 这个新车牌有了第一集
                     # 这个车牌在dict_subtitle_files中，有它的字幕。
-                    if car in dict_subtitle_file.values():
-                        subtitle_file = list(dict_subtitle_file.keys())[list(dict_subtitle_file.values()).index(car)]
-                        del dict_subtitle_file[subtitle_file]
+                    if car in self.dict_subtitle_file.values():
+                        subtitle_file = list(self.dict_subtitle_file.keys())[list(self.dict_subtitle_file.values()).index(car)]
+                        del self.dict_subtitle_file[subtitle_file]
                     else:
                         subtitle_file = ''
                     # 将该jav的各种属性打包好，包括原文件名带扩展名、所在文件夹路径、第几集、所属字幕文件名
-                    jav_struct = JavFile(file_raw, dir_current, car, dict_car_episode[car], subtitle_file, no_current)
+                    jav_struct = JavFile(file_raw, dir_current, car, self.dict_car_episode[car], subtitle_file, self.no_current)
                     list_jav_files.append(jav_struct)
                 else:
                     print(f'>>无法处理: {dir_current_relative}{sep}{file_raw}')
-        return list_jav_files, dict_car_episode, no_current
+        return list_jav_files
 
     # 功能：所选文件夹总共有多少个视频文件
     # 参数：用户选择整理的文件夹路径dir_choose
     # 返回：无
     # 辅助：os.walk
-    def count_num_videos(self, dir_choose):
-        num_videos = 0
+    def count_num_videos(self, dir_choose, list_jav_files):
         for dir_current, list_sub_dirs, list_sub_files in os.walk(dir_choose):
             for file_raw in list_sub_files:
                 file_temp = file_raw.upper()
                 if file_temp.endswith(self._tuple_video_types) and not file_temp.startswith('.'):
-                    num_videos += 1
-        return num_videos
+                    self.sum_all_videos += 1
+        for jav_file in list_jav_files:
+            jav_file.sum_all_episodes = self.dict_car_episode[jav_file.car]
 
     # 功能：完善用于命名的dict_data，如果用户自定义的各种命名公式中有dict_data未包含的元素，则添加进dict_data。
     #      将可能比较复杂的list_classify_basis按“+”“\”切割好，准备用于组装后面的归类路径。
@@ -557,21 +567,20 @@ class Handler(object):
                 raise FileExistsError(f'归类失败，重复的影片，归类的目标文件夹已经存在相同的影片: {path_new}')    # 【终止对该jav的整理】
 
     # 功能：3重命名文件夹【相同】如果已进行第2操作，第3操作不会进行，因为用户只需要归类视频文件，不需要管文件夹。
-    # 参数：重命名文件夹的公式list_name_folder，命名信息dict_for_standard，
-    #      处理的影片jav，该车牌总共多少cd num_all_episodes
+    # 参数：处理的影片jav
     # 返回：处理的影片jav（所在文件夹路径改变）
     # 辅助：os.exists, os.rename, os.makedirs，record_fail
-    def rename_folder(self, jav_file, dict_for_standard, sum_all_episodes):
+    def rename_folder(self, jav_file):
         if self.bool_rename_folder:
             # 构造 新文件夹名folder_new
             folder_new = ''
             for j in self.list_name_folder:
-                folder_new = f'{folder_new}{dict_for_standard[j]}'
+                folder_new = f'{folder_new}{self.dict_for_standard[j]}'
             folder_new = folder_new.rstrip(' .')  # 【临时变量】新的所在文件夹。去除末尾空格和“.”
             # 是独立文件夹，才会重命名文件夹
             if jav_file.is_in_separate_folder:
                 # 当前视频是该车牌的最后一集，他的兄弟姐妹已经处理完成，才会重命名它们的“家”。
-                if jav_file.episode == sum_all_episodes:
+                if jav_file.episode == jav_file.sum_all_episodes:
                     dir_new = f'{os.path.dirname(jav_file.dir)}{sep}{folder_new}'  # 【临时变量】新的影片所在文件夹路径。
                     # 想要重命名的目标影片文件夹不存在
                     if not os.path.exists(dir_new):
@@ -643,8 +652,9 @@ class Handler(object):
     #      当前处理的文件夹路径dir_current，命名信息dict_for_standard
     # 返回：处理的影片jav（所在文件夹路径改变）
     # 辅助：os.exists, os.rename, os.makedirs，
-    def classify_folder(self, jav_file, dict_for_standard, dir_current, num_all_episodes):
-        if self.bool_classify and self.bool_classify_folder and jav_file.episode == num_all_episodes:  # 需要移动文件夹，且，是该影片的最后一集
+    def classify_folder(self, jav_file, dict_for_standard, dir_current):
+        # 需要移动文件夹，且，是该影片的最后一集
+        if self.bool_classify and self.bool_classify_folder and jav_file.episode == jav_file.num_all_episodes:
             # 用户选择的文件夹是一部影片的独立文件夹，为了避免在这个文件夹里又生成新的归类文件夹
             if jav_file.is_in_separate_folder and self.dir_classify_target.startswith(dir_current):
                 raise TooManyDirectoryLevelsError(f'无法归类，不建议在当前文件夹【{dir_current}】内再新建归类文件夹，请选择该上级文件夹重新整理: ')
@@ -817,3 +827,46 @@ class Handler(object):
                     add_watermark_subtitle(path_poster)
                 if handler.bool_watermark_divulge and bool_divulge:
                     add_watermark_divulge(path_poster)
+
+    # 功能：判断当前一级文件夹是否含有nfo文件
+    # 参数：这层文件夹下的文件们
+    # 返回：True
+    # 辅助：无
+    def judge_skip_exist_nfo(self, list_files):
+        if self.bool_skip:
+            for file in list_files[::-1]:
+                if file.endswith('.nfo'):
+                    return True
+        return False
+
+    # 功能：判定影片所在文件夹是否是独立文件夹，独立文件夹是指该文件夹仅用来存放该影片，不包含“.actors”"extrafanrt”外的其他文件夹
+    # 参数：len_dict_car_pref 当前所处文件夹包含的车牌数量, len_list_jav_struct当前所处文件夹包含的、需要整理的jav的结构体数量,
+    #      list_sub_dirs当前所处文件夹包含的子文件夹们
+    # 返回：True
+    # 辅助：judge_exist_extra_folders
+    def judge_separate_folder(self, len_list_jav_files, list_sub_dirs):
+        # no_current目前是 文件夹中所有视频包括非jav的数量
+        sum_videos_include = self.no_current
+        # 当前文件夹下，车牌不止一个；还有其他非jav视频；有其他文件夹，除了演员头像文件夹“.actors”和额外剧照文件夹“extrafanart”；
+        if len(self.dict_car_episode) > 1 or sum_videos_include > len_list_jav_files:
+            return False
+        for folder in list_sub_dirs:
+            if folder != '.actors' and folder != 'extrafanart':
+                return False
+        return True  # 这一层文件夹是这部jav的独立文件夹
+
+    # 功能：如果需要为kodi整理头像，则先检查“演员头像for kodi.ini”、“演员头像”文件夹是否存在; 检查 归类根目录 的合法性
+    # 参数：是否需要整理头像，用户自定义的归类根目录，用户选择整理的文件夹路径
+    # 返回：归类根目录路径
+    # 辅助：os.sep，os.path.exists，shutil.copyfile
+    def check_actors(self):
+        # 检查头像: 如果需要为kodi整理头像，先检查演员头像ini、头像文件夹是否存在。
+        if self.bool_sculpture:
+            if not os.path.exists('演员头像'):
+                input('\n“演员头像”文件夹丢失！请把它放进exe的文件夹中！\n')
+            if not os.path.exists('【缺失的演员头像统计For Kodi】.ini'):
+                if os.path.exists('actors_for_kodi.ini'):
+                    copyfile('actors_for_kodi.ini', '【缺失的演员头像统计For Kodi】.ini')
+                    print('\n“【缺失的演员头像统计For Kodi】.ini”成功！')
+                else:
+                    input('\n请打开“【ini】重新创建ini.exe”创建丢失的程序组件!')

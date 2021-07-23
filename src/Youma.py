@@ -1,23 +1,18 @@
 # -*- coding:utf-8 -*-
 import os
 from traceback import format_exc
-# ################################################# 相同 ###########################################################
 from Class.MyHandler import Handler
-from MyEnum import ScrapeStatusEnum, StandardStatusEnum
+from Class.MyEnum import ScrapeStatusEnum
 from Class.MyLogger import Logger
-from MyJav import JavFile, JavModel
-from MyError import TooManyDirectoryLevelsError
-from Prepare import judge_exist_nfo, judge_separate_folder
-from User import choose_directory
-from Genre import better_dict_genre
-# ################################################## 部分不同 ##########################################################
+from Class.MyJav import JavFile, JavModel
+from Class.MyError import TooManyDirectoryLevelsError
+from Functions.Progress.User import choose_directory
+from Functions.Metadata.Genre import better_dict_genre
 from Functions.Web.Arzon import steal_arzon_cookies, scrape_from_arzon
-# ################################################## 独特 ##########################################################
 from Functions.Web.Javbus import scrape_from_bus
-from Javlibrary import scrape_from_library
+from Functions.Web.Javlibrary import scrape_from_library
 
 #  main开始
-
 print('1、避开高峰期，整理速度可能很慢。\n'
       '2、若一直打不开网站，请在ini中更新对应网址\n')
 
@@ -47,7 +42,6 @@ dict_bus_genres = better_dict_genre('Javbus', handler.to_language)
 # 用户输入“回车”就继续选择文件夹整理
 input_key = ''
 
-
 while input_key == '':
 
     # region （3.1）用户选择需整理的文件夹，校验归类的目标文件夹的合法性
@@ -60,38 +54,31 @@ while input_key == '':
     handler.check_classify_target_directory(dir_choose)
     # endregion
 
+    handler.init_dict_and_no()
+
     # region （3.2）遍历所选文件夹内部进行处理
-    no_current = 0  # 当前视频（包括非jav）的编号，用于显示进度、获取最大视频编号即当前文件夹内视频数量
     print('...文件扫描开始...如果时间过长...请避开高峰期...\n')
     # dir_current【当前所处文件夹】，由浅及深遍历每一层文件夹，list_sub_dirs【子文件夹们】 list_sub_files【子文件们】
     for dir_current, list_sub_dirs, list_sub_files in os.walk(dir_choose):
-
         # region （3.2.1）当前文件夹内包含jav及字幕文件的状况：有多少视频，其中多少jav，同一车牌多少cd，当前文件夹是不是独立文件夹
-        # （3.2.1.1）当前所处文件夹 相对于 所选文件夹 的路径，主要用于报错
-        dir_current_relative = dir_current[len(dir_choose):]
-        # 什么文件都没有 | dir_current是已归类的目录，无需处理 | 跳过已存在nfo的文件夹，判断这一层文件夹中有没有nfo
+        # （3.2.1.1）什么文件都没有 | dir_current是已归类的目录，无需处理 | 跳过已存在nfo的文件夹，判断这一层文件夹中有没有nfo
         if not list_sub_files \
-                or '归类完成' in dir_current_relative \
-                or (handler.bool_skip and judge_exist_nfo(list_sub_files)):
+                or '归类完成' in dir_current[len(dir_choose):] \
+                or handler.judge_skip_exist_nfo(list_sub_files):
             continue
 
         # （3.2.1.2）判断文件是不是字幕文件，放入dict_subtitle_file中，字幕文件和车牌对应关系 {'c:\a\abc_123.srt': 'abc-123'}
-        dict_subtitle_file = handler.get_dict_subtitle_file(list_sub_files)
+        handler.get_dict_subtitle_file(list_sub_files)
         # （3.2.1.3）获取当前所处文件夹，子一级内，包含的jav，放入list_jav_files 存放: 需要整理的jav文件对象jav_file;
-        list_jav_files, dict_car_episode, no_current = handler.get_list_jav_files(list_sub_files, no_current,
-                                                                                  dict_subtitle_file,
-                                                                                  dir_current,
-                                                                                  dir_current_relative)
-        # dict_car_episode存放: 每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
+        list_jav_files = handler.get_list_jav_files(list_sub_files, dir_current, dir_current[len(dir_choose):])
         # （3.2.1.4）没有jav，则跳出当前所处文件夹
         if not list_jav_files:
             continue
         # （3.2.1.5）判定当前所处文件夹是否是独立文件夹，独立文件夹是指该文件夹仅用来存放该影片，而不是大杂烩文件夹，是后期移动剪切操作的重要依据
-        JavFile.is_in_separate_folder = judge_separate_folder(len(dict_car_episode), no_current,
-                                                              len(list_jav_files), list_sub_dirs)
+        JavFile.is_in_separate_folder = handler.judge_separate_folder(len(list_jav_files), list_sub_dirs)
         # is_in_separate_folder是类属性，不是实例属性，修改类属性会将list_jav_files中的所有jav_file的is_in_separate_folder同步
         # （3.2.1.6）所选文件夹总共有多少个视频文件，包括非jav文件，主要用于显示进度
-        sum_all_videos = handler.count_num_videos(dir_choose)
+        handler.count_num_videos(dir_choose, list_jav_files)
         # endregion
 
         # region（3.2.2）开始处理每一部jav文件
@@ -99,7 +86,7 @@ while input_key == '':
             try:
                 # region（3.2.2.1）准备工作
                 # 当前进度
-                print(f'>> [{jav_file.no}/{sum_all_videos}]:{jav_file.name}')
+                print(f'>> [{jav_file.no}/{handler.sum_all_videos}]:{jav_file.name}')
                 print(f'    >发现车牌: {jav_file.car}')
                 jav_model = JavModel(jav_file.car)
                 logger.path_relative = jav_file.path[len(dir_choose):]  # 影片的相对于所选文件夹的路径，用于报错
@@ -120,7 +107,8 @@ while input_key == '':
                 car = jav_model.Car
 
                 # region（3.2.2.3）从javlibrary获取信息
-                status, genres_library = scrape_from_library(jav_file, jav_model, handler.url_library, handler.proxy_library)
+                status, genres_library = scrape_from_library(jav_file, jav_model, handler.url_library,
+                                                             handler.proxy_library)
                 if status == ScrapeStatusEnum.library_specified_url_wrong:
                     logger.record_fail(f'你指定的javlibrary网址有错误: ')
                     continue  # 结束对该jav的整理
@@ -172,9 +160,6 @@ while input_key == '':
                 # endregion
 
                 ################################################################################
-                # 是CD1还是CDn？
-                sum_all_episodes = dict_car_episode[jav_file.car]  # 该车牌总共多少集
-                jav_file.cd = f'-cd{jav_file.episode}' if sum_all_episodes > 1 else ''
                 handler.prefect_jav_model_and_dict_for_standard(jav_file, jav_model)
 
                 # 1重命名视频
@@ -186,7 +171,7 @@ while input_key == '':
                 handler.classify_files(jav_file)
 
                 # 3重命名文件夹。如果是针对“文件”归类（即第2步），这一步会被跳过，因为用户只需要归类视频文件，不需要管文件夹。
-                handler.rename_folder(jav_file, sum_all_episodes)
+                handler.rename_folder(jav_file)
 
                 # 更新一下path_relative
                 logger.path_relative = f'{sep}{jav_file.path.replace(dir_choose, "")}'  # 影片的相对于所选文件夹的路径，用于报错
@@ -201,7 +186,7 @@ while input_key == '':
                 handler.collect_sculpture()
 
                 # 7归类影片，针对文件夹【相同】
-                handler.classify_folder(jav_file, dir_current, sum_all_episodes)
+                handler.classify_folder(jav_file, dir_current)
 
             except KeyError as error:
                 logger.record_fail(f'发现新的特征需要添加至【特征对照表】，请告知作者: {error}\n')
