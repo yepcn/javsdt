@@ -1,6 +1,9 @@
 # -*- coding:utf-8 -*-
-import sys, os, tkinter, time
+import sys
+import os
+import time
 from os import sep
+from tkinter import filedialog, Tk, TclError
 
 
 # 功能：获取用户选取的文件夹路径
@@ -12,9 +15,9 @@ def choose_directory():
     print('请选择要整理的文件夹：', end='')
     for i in range(2):
         try:
-            tk_new = tkinter.Tk()
+            tk_new = Tk()
             tk_new.withdraw()
-            path_work = tk_new.filedialog.askdirectory()
+            path_work = filedialog.askdirectory()
             if path_work == '':
                 print('你没有选择目录! 请重新选：')
                 time.sleep(2)
@@ -23,7 +26,7 @@ def choose_directory():
                 # askdirectory 获得是 正斜杠 路径C:/，所以下面要把 / 换成 反斜杠\
                 print(path_work)
                 return path_work.replace('/', sep)
-        except tkinter.TclError:  # 来自@BlueSkyBot
+        except TclError:  # 来自@BlueSkyBot
             try:
                 path_work = input("请输入你需要整理的文件夹路径: ")
             except KeyboardInterrupt:

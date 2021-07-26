@@ -1,11 +1,14 @@
 # -*- coding:utf-8 -*-
-import re, requests
+import re
+import requests
 from Class.MyEnum import ScrapeStatusEnum
-
-
 # from traceback import format_exc
 
+
 # 搜索javbus，或请求javbus上jav所在网页，返回html
+from MyError import SpecifiedUrlError
+
+
 def get_bus_html(url, proxy):
     for retry in range(10):
         try:
@@ -36,21 +39,22 @@ def get_bus_html(url, proxy):
 def scrape_from_bus(jav_file, jav_model, url_bus, proxy):
     status = ScrapeStatusEnum.bus_not_found
     # 用户指定了网址，则直接得到jav所在网址
-    if '公交车' in jav_file.name:
-        url_appointg = re.search(r'公交车(.+?)\.', jav_file.name)
+    if '公交车' in jav_file.Name:
+        url_appointg = re.search(r'公交车(.+?)\.', jav_file.Name)
         if url_appointg:
-            html_jav_bus = get_bus_html(f'{url_bus}/?v={url_appointg.group(1)}', proxy)
+            url_jav_bus = f'{url_bus}/?v={url_appointg.group(1)}'
+            html_jav_bus = get_bus_html(url_jav_bus, proxy)
             if not re.search(r'404 Page', html_jav_bus):
-                return ScrapeStatusEnum.specified_bus_url_wrong, []
+                raise SpecifiedUrlError(f'你指定的javbus网址找不到jav: {url_jav_bus}，')
         else:
             # 指定的javlibrary网址有错误
-            return ScrapeStatusEnum.specified_bus_url_wrong, []
+            raise SpecifiedUrlError(f'你指定的javbus网址有错误: ')
     # 用户没有指定网址，则去搜索
     else:
         html_jav_bus = ''
         # jav在javbus上的url，一般就是javbus网址/车牌
-        url_jav_bus = f'{url_bus}/{jav_model.Car}'
-        print('    >获取补充信息：', url_jav_bus)
+        url_jav_bus = f'{url_bus}/{jav_file.Car_id}'
+        print('    >前往javbus：', url_jav_bus)
         # 获得影片在javbus上的网页
         html_temp = get_bus_html(url_jav_bus, proxy)
         if not re.search(r'404 Page', html_temp):
@@ -59,15 +63,15 @@ def scrape_from_bus(jav_file, jav_model, url_bus, proxy):
             # 这部jav在javbus的网址不简单
         else:
             # 还是老老实实去搜索
-            url_search_bus = f'{url_bus}/search/{jav_model.Car.replace("-", "")}&type=1&parent=ce'
+            url_search_bus = f'{url_bus}/search/{jav_file.Car_id.replace("-", "")}&type=1&parent=ce'
             print('    >搜索javbus：', url_search_bus)
             html_search_bus = get_bus_html(url_search_bus, proxy)
             # 搜索结果的网页，大部分情况一个结果，也有可能是多个结果的网页
             # 尝试找movie-box
             list_search_results = re.findall(r'movie-box" href="(.+?)">', html_search_bus)  # 匹配处理“标题”
             if list_search_results:
-                pref = jav_model.Car.split('-')[0]  # 匹配车牌的前缀字母
-                suf = jav_model.Car.split('-')[-1].lstrip('0')  # 当前车牌的后缀数字 去除多余的0
+                pref = jav_file.Car_id.split('-')[0]  # 匹配车牌的前缀字母
+                suf = jav_file.Car_id.split('-')[-1].lstrip('0')  # 当前车牌的后缀数字 去除多余的0
                 list_fit_results = []  # 存放，车牌符合的结果
                 for i in list_search_results:
                     url_end = i.split('/')[-1].upper()
@@ -102,4 +106,3 @@ def scrape_from_bus(jav_file, jav_model, url_bus, proxy):
         # 特点
         genres = re.findall(r'gr_sel" value="\d+"><a href=".+">(.+?)</a>', html_jav_bus)
     return status, genres
-

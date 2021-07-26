@@ -1,37 +1,39 @@
 # -*- coding: UTF-8 -*-
-from enum import Enum
+from enum import IntEnum
 
 
-class ScrapeStatusEnum(Enum):
+class ScrapeStatusEnum(IntEnum):
     interrupted = 0
     success = 1
 
-    db_specified_url_wrong = 2
-    db_multiple_search_results = 3
-    db_not_found = 4
+    db_multiple_search_results = 2
+    db_not_found = 3
 
-    library_specified_url_wrong = 5
-    library_multiple_search_results = 6
-    library_not_found = 7
+    library_multiple_search_results = 4
+    library_not_found = 5
 
-    bus_specified_url_wrong = 8
-    bus_multiple_search_results = 9
-    bus_not_found = 10
+    bus_multiple_search_results = 6
+    bus_not_found = 7
 
-    arzon_specified_url_wrong = 11
-    arzon_exist_but_no_plot = 12
-    arzon_not_found = 13
+    arzon_exist_but_no_plot = 8
+    arzon_not_found = 9
 
 
-class CompletionStatusEnum(Enum):
+class CompletionStatusEnum(IntEnum):
     unknown = 0
+
     only_db = 1,
-    db_library = 2
-    db_bus = 3
-    db_library_bus = 4
+    only_library = 2
+    only_bus = 3
+
+    db_library = 4
+    db_bus = 5
+    db_library_bus = 6
+
+    library_bus = 7
 
 
-class CutTypeEnum(Enum):
+class CutTypeEnum(IntEnum):
     unknown = 0
     left = 1
     middle = 2
@@ -39,7 +41,7 @@ class CutTypeEnum(Enum):
     custom = 4
 
 
-class StandardStatusEnum(Enum):
+class StandardStatusEnum(IntEnum):
     interrupted = 0
     success = 1
     remaining_problem_case_sensitive = 2

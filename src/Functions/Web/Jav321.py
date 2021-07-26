@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
-import re, requests
-from os import system
+import re
+import requests
 # from traceback import format_exc
 
 
@@ -53,4 +53,3 @@ def post_321_html(url, data, proxy):
             print('    >打开网页失败，空返回...重新尝试...')
             continue
     input(f'>>请检查你的网络环境是否可以打开：{url}')
-

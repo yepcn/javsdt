@@ -2,38 +2,6 @@
 import re
 
 
-# 功能：发现用于javlibrary的有码车牌，注意T28-、ID比较特殊
-# 参数：大写后的视频文件名file，素人车牌list_suren_car    示例：AVOP-127.MP4    ['LUXU', 'MIUM']
-# 返回：发现的车牌    示例：AVOP-127
-# 辅助：re.search
-def find_car_library(file, list_suren_car):
-    # car_pref 车牌前缀 ABP-，带横杠；car_suf，车牌后缀 123。
-    # 先处理特例 T28 车牌
-    if re.search(r'[^A-Z]?T28[-_ ]*\d\d+', file):
-        car_pref = 'T-28'
-        car_suf = re.search(r'T28[-_ ]*(\d\d+)', file).group(1)
-    # 特例 ID 车牌，在javlibrary上，20ID-020是ID-20020
-    elif re.search(r'[^\d]?\d\dID[-_ ]*\d\d+', file):
-        carg = re.search(r'[^\d]?(\d\d)ID[-_ ]*(\d\d+)', file)
-        car_pref = f'ID-{carg.group(1)}'
-        car_suf = carg.group(2)
-    # 一般车牌
-    elif re.search(r'[A-Z][A-Z]+[-_ ]*\d\d+', file):
-        carg = re.search(r'([A-Z][A-Z]+)[-_ ]*(\d\d+)', file)
-        car_pref = carg.group(1)
-        # 如果是素人或无码车牌，不处理
-        if car_pref in list_suren_car or car_pref in ['HEYZO', 'PONDO', 'CARIB', 'OKYOHOT']:
-            return ''
-        car_pref = f'{car_pref}-'
-        car_suf = carg.group(2)
-    else:
-        return ''
-    # 去掉太多的0，AVOP00127 => AVOP-127
-    if len(car_suf) > 3:
-        car_suf = f'{car_suf[:-3].lstrip("0")}{car_suf[-3:]}'
-    return f'{car_pref}{car_suf}'
-
-
 # 功能：发现原视频文件名中用于javbus的有码车牌
 # 参数：大写后的视频文件名，素人车牌list_suren_car    示例：AVOP-127.MP4    ['LUXU', 'MIUM']
 # 返回：发现的车牌    示例：AVOP-127
@@ -47,8 +15,8 @@ def find_car_youma(file, list_suren_car):
     # 以javbus上记录的20ID-020为标准
     elif re.search(r'[^\d]?\d\dID[-_ ]*\d\d+', file):
         carg = re.search(r'(\d\d)ID[-_ ]*(\d\d+)', file)
-        car_pref = f'{carg.group(1)}ID-'
-        car_suf = carg.group(2)
+        car_pref = 'ID-'
+        car_suf = f'{carg.group(1)}{carg.group(2)}'
     # 一般车牌
     elif re.search(r'[A-Z]+[-_ ]*\d\d+', file):
         carg = re.search(r'([A-Z]+)[-_ ]*(\d\d+)', file)

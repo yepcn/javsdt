@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
-import requests, json
+import requests
+import json
 from time import sleep, time
 from hashlib import md5
 # from traceback import format_exc
@@ -25,7 +26,8 @@ def translate(api_id, api_key, word, to_lang):
             'sign': '%s' % final_sign
         }
         try:
-            response = requests.get('http://api.fanyi.baidu.com/api/trans/vip/translate', params=paramas, timeout=(6, 7))
+            response = requests.get('http://api.fanyi.baidu.com/api/trans/vip/translate',
+                                    params=paramas, timeout=(6, 7))
         except:
             print('    >百度翻译拉闸了...重新翻译...')
             continue
@@ -68,5 +70,3 @@ def translate(api_id, api_key, word, to_lang):
             return json_reads['trans_result'][0]['dst']
     print('    >翻译简介失败...请截图联系作者...')
     return f'【百度翻译出错】{word}'
-
-

@@ -30,8 +30,9 @@ def download_pic(url, path, proxy):
         try:
             img = Image.open(path)
             img.load()
-            return
+            print('    >fanart.jpg下载成功')
+            return True
         except OSError:
             print('    >下载失败，重新下载....')
             continue
-    raise Exception('    >下载多次，仍然失败！')
+    return False

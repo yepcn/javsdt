@@ -1,53 +1,55 @@
 # -*- coding:utf-8 -*-
-from os.path import splitext, dirname, basename, curdir
+from datetime import datetime
+from os.path import splitext, basename
 from os import sep
 from MyEnum import CompletionStatusEnum, CutTypeEnum
 
 
 # 每一部jav的“结构体”
 class JavFile(object):
-    def __init__(self, file_raw, dir_current, car, episode, subtitle, num_current):
-        self.car = car                                     # 车牌
-        self.pref = car.split('-')[0]                      # 车牌前缀
-        self.name = file_raw                               # 完整文件名 ABC-123-cd2.mp4；会在重命名过程中发生变化
-        self.ext = splitext(file_raw)[1].lower()           # 视频文件扩展名 .mp4
-        self.dir = dir_current                             # 视频所在文件夹的路径；会在重命名过程中发生变化
-        self.episode = episode                             # 第几集 cd1 cd2 cd3
-        self.sum_all_episodes = 0                          # 当前车牌总共多少集，用户的
-        self.subtitle = subtitle                           # 字幕文件名  ABC-123.srt；会在重命名过程中发生变化
-        self.ext_subtitle = splitext(subtitle)[1].lower()  # 字幕扩展名  .srt
-        self.no = num_current                              # 当前处理的视频在所有视频中的编号，整理进度
-        self.is_subtitle = False                           # 拥有字幕
-        self.is_divulge = False                            # 是无码流出
+    def __init__(self, file_raw, dir_current, car, car_id, episode, subtitle, num_current):
+        self.Car = car                                     # 车牌
+        self.Car_id = car_id                                     # 车牌
+        self.Pref = car.split('-')[0]                      # 车牌前缀
+        self.Name = file_raw                               # 完整文件名 ABC-123-cd2.mp4；会在重命名过程中发生变化
+        self.Ext = splitext(file_raw)[1].lower()           # 视频文件扩展名 .mp4
+        self.Dir = dir_current                             # 视频所在文件夹的路径；会在重命名过程中发生变化
+        self.Episode = episode                             # 第几集 cd1 cd2 cd3
+        self.Sum_all_episodes = 0                          # 当前车牌总共多少集，用户的
+        self.Subtitle = subtitle                           # 字幕文件名  ABC-123.srt；会在重命名过程中发生变化
+        self.Ext_subtitle = splitext(subtitle)[1].lower()  # 字幕扩展名  .srt
+        self.No = num_current                              # 当前处理的视频在所有视频中的编号，整理进度
+        self.Is_subtitle = False                           # 拥有字幕
+        self.Is_divulge = False                            # 是无码流出
 
     # 类属性
-    is_in_separate_folder = False         # 是否拥有独立文件夹
+    Is_in_separate_folder = False         # 是否拥有独立文件夹
 
     # 多cd，如果有两集，第一集cd1.第二集cd2；如果只有一集，为空
     @property
-    def cd(self):
-        return f'-cd{self.episode}' if self.sum_all_episodes > 1 else ''
+    def Cd(self):
+        return f'-cd{self.Episode}' if self.Sum_all_episodes > 1 else ''
 
     # 所在文件夹名称
     @property
-    def folder(self):
-        return basename(self.dir)
+    def Folder(self):
+        return basename(self.Dir)
 
     # 这下面列为属性而不是字段，因为name、dir、subtitle会发生变化
     # 视频文件完整路径
     @property
-    def path(self):
-        return f'{self.dir}{sep}{self.name}'
+    def Path(self):
+        return f'{self.Dir}{sep}{self.Name}'
 
     # 视频文件名，但不带文件扩展名
     @property
-    def name_no_ext(self):
-        return splitext(self.name)[0].lower()
+    def Name_no_ext(self):
+        return splitext(self.Name)[0].lower()
 
     # 字幕文件完整路径
     @property
-    def path_subtitle(self):
-        return f'{self.dir}{sep}{self.subtitle}'
+    def Path_subtitle(self):
+        return f'{self.Dir}{sep}{self.Subtitle}'
 
 
 class JavModel(object):
@@ -68,7 +70,7 @@ class JavModel(object):
         self.Score = 0.0              # 14 评分
         self.CoverLibrary = ''        # 15 封面Library
         self.CoverBus = ''            # 16 封面Bus
-        self.CutType = CutTypeEnum.Unknown.value    # 17 裁剪方式
+        self.CutType = CutTypeEnum.left.value    # 17 裁剪方式
         self.Javdb = ''               # 18 db编号
         self.Javlibrary = ''          # 19 library编号
         self.Javbus = ''              # 20 bus编号
@@ -77,3 +79,5 @@ class JavModel(object):
         self.Version = 0              # 23 版本
         self.Genres = []              # 24 类型
         self.Actors = []              # 25 演员们
+        self.Version = 1
+        self.ModifyDate = datetime.now().strftime("%Y-%m-%d %H:%M")
