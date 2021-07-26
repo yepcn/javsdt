@@ -789,7 +789,7 @@ class Handler(object):
             else:
                 status = False
                 if jav_model.Javdb:
-                    url_cover = f'https://jdbimgs.com/covers/{jav_model.Javdb[:2]}/{jav_model.Javdb}.jpg'
+                    url_cover = f'https://jdbimgs.com/covers/{jav_model.Javdb[:2].lower()}/{jav_model.Javdb}.jpg'
                     print('    >从javdb下载封面: ', url_cover)
                     status = download_pic(url_cover, path_fanart, self.proxy_db)
                 if not status and jav_model.CoverBus:
