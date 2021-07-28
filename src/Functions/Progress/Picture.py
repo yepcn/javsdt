@@ -2,10 +2,10 @@
 from PIL import Image
 
 
-# 功能：查看图片是否存在，能否打开，有没有损坏
-# 参数：图片路径path_picture
-# 返回：True
-# 辅助：Image.open
+# 功能: 查看图片是否存在，能否打开，有没有损坏
+# 参数: 图片路径path_picture
+# 返回: True
+# 辅助: Image.open
 def check_picture(path_picture):
     try:
         img = Image.open(path_picture)
@@ -16,10 +16,10 @@ def check_picture(path_picture):
         return False
 
 
-# 功能：调用百度AL人体分析，分析图片中的人体
-# 参数：图片路径，百度人体分析client
-# 返回：鼻子的x坐标
-# 辅助：cli.bodyAnalysis
+# 功能: 调用百度AL人体分析，分析图片中的人体
+# 参数: 图片路径，百度人体分析client
+# 返回: 鼻子的x坐标
+# 辅助: cli.bodyAnalysis
 def image_cut(path, client):
     # if bool_face:   # 启动人体分析的这两行代码在settings.py中
     #     client = AipBodyAnalysis(al_id, ai_ak, al_sk)
@@ -30,16 +30,16 @@ def image_cut(path, client):
             result = client.bodyAnalysis(image)
             return int(result["person_info"][0]['body_parts']['nose']['x'])
         except:
-            print('    >人体分析出现错误，请对照“人体分析错误表格”：', result)
+            print('    >人体分析出现错误，请对照“人体分析错误表格”: ', result)
             print('    >正在尝试重新人体检测...')
             continue
     input('    >人体分析无法使用...请先解决人体分析的问题，或截图联系作者...')
 
 
-# 功能：裁剪有码的fanart封面作为poster，一般fanart是800*538，把右边的379*538裁剪下来
-# 参数：已下载的fanart路径，目标poster路径
-# 返回：无
-# 辅助：Image.open
+# 功能: 裁剪有码的fanart封面作为poster，一般fanart是800*538，把右边的379*538裁剪下来
+# 参数: 已下载的fanart路径，目标poster路径
+# 返回: 无
+# 辅助: Image.open
 def crop_poster_youma(path_fanart, path_poster):
     img = Image.open(path_fanart)
     wf, hf = img.size  # fanart的宽 高
@@ -56,10 +56,10 @@ def crop_poster_youma(path_fanart, path_poster):
         print('    >poster.jpg裁剪成功')
 
 
-# 功能：不使用人体分析，裁剪fanart封面作为poster，裁剪中间，或者裁剪右边
-# 参数：已下载的fanart路径，目标poster路径， 选择模式int_pattern（无码是裁剪fanart右边，FC2和素人是裁剪fanart中间）
-# 返回：无
-# 辅助：Image.open
+# 功能: 不使用人体分析，裁剪fanart封面作为poster，裁剪中间，或者裁剪右边
+# 参数: 已下载的fanart路径，目标poster路径， 选择模式int_pattern（无码是裁剪fanart右边，FC2和素人是裁剪fanart中间）
+# 返回: 无
+# 辅助: Image.open
 def crop_poster_default(path_fanart, path_poster, int_pattern):
     img = Image.open(path_fanart)
     wf, hf = img.size  # fanart的宽 高
@@ -80,10 +80,10 @@ def crop_poster_default(path_fanart, path_poster, int_pattern):
         print('    >poster.jpg裁剪成功')
 
 
-# 功能：使用人体分析，裁剪fanart封面作为poster，围绕鼻子坐标进行裁剪
-# 参数：已下载的fanart路径，目标poster路径， 百度人体分析client
-# 返回：无
-# 辅助：Image.open, image_cut()
+# 功能: 使用人体分析，裁剪fanart封面作为poster，围绕鼻子坐标进行裁剪
+# 参数: 已下载的fanart路径，目标poster路径， 百度人体分析client
+# 返回: 无
+# 辅助: Image.open, image_cut()
 def crop_poster_baidu(path_fanart, path_poster, client):
     img = Image.open(path_fanart)
     wf, hf = img.size  # fanart的宽 高
@@ -110,10 +110,10 @@ def crop_poster_baidu(path_fanart, path_poster, client):
         print('    >poster.jpg裁剪成功')
 
 
-# 功能：给poster的左上方加上“中文字幕”的红色条幅
-# 参数：poster路径
-# 返回：无
-# 辅助：Image.open
+# 功能: 给poster的左上方加上“中文字幕”的红色条幅
+# 参数: poster路径
+# 返回: 无
+# 辅助: Image.open
 def add_watermark_subtitle(path_poster):
     # 打开poster，“中文字幕”条幅的宽高是poster的宽的四分之一
     img_poster = Image.open(path_poster)
@@ -128,10 +128,10 @@ def add_watermark_subtitle(path_poster):
     print('    >poster加上中文字幕条幅')
 
 
-# 功能：给poster的右上方加上“无码流出”的红色条幅
-# 参数：poster路径
-# 返回：无
-# 辅助：Image.open
+# 功能: 给poster的右上方加上“无码流出”的红色条幅
+# 参数: poster路径
+# 返回: 无
+# 辅助: Image.open
 def add_watermark_divulge(path_poster):
     # 打开poster，条幅的宽高是poster的宽的四分之一
     img_poster = Image.open(path_poster)

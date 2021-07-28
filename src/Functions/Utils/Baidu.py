@@ -6,10 +6,10 @@ from hashlib import md5
 # from traceback import format_exc
 
 
-# 功能：调用百度翻译API接口，翻译日语简介
-# 参数：百度翻译api账户api_id, api_key，需要翻译的内容word，目标语言to_lang
-# 返回：中文简介string
-# 辅助：os.system, hashlib.md5，time.time，requests.get，json.loads
+# 功能: 调用百度翻译API接口，翻译日语简介
+# 参数: 百度翻译api账户api_id, api_key，需要翻译的内容word，目标语言to_lang
+# 返回: 中文简介string
+# 辅助: os.system, hashlib.md5，time.time，requests.get，json.loads
 def translate(api_id, api_key, word, to_lang):
     for retry in range(10):
         # 把账户、翻译的内容、时间 混合md5加密，传给百度验证

@@ -3,7 +3,7 @@ import re
 import requests
 from Class.MyEnum import ScrapeStatusEnum
 from MyError import SpecifiedUrlError
-from XML import replace_xml_win
+from Utils.XML import replace_xml_win
 # from traceback import format_exc
 
 
@@ -31,7 +31,7 @@ def get_library_html(url, proxy):
         else:                                         # 代理工具返回的错误信息
             print('    >打开网页失败，空返回...重新尝试...')
             continue
-    input(f'>>请检查你的网络环境是否可以打开：{url}')
+    input(f'>>请检查你的网络环境是否可以打开: {url}')
 
 
 # 返回: Status, html_jav_library
@@ -53,7 +53,7 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
     # 用户没有指定网址，则去搜索
     else:
         url_search = f'{url_library}/vl_searchbyid.php?keyword={jav_file.Car}'
-        print(f'    >搜索车牌: {url_search}')
+        print(f'    >搜索javlibrary: {url_search}')
         # 得到javlibrary搜索网页html
         html_search_library = get_library_html(url_search, proxy_library)
         # 从前: 搜索结果，大部分情况就是这个影片的网页（搜索结果唯一，javlibrary会自动跳转到该jav唯一的网页），另一种情况是多个搜索结果的网页 目前版本请无视这一行:
@@ -140,7 +140,7 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
     if not jav_model.Actors:
         jav_model.Actors = re.findall(r'star\.php.+?>(.+?)<', html_jav_library)
     # 评分
-    if jav_model.Score == 0.0:
+    if jav_model.Score == 0:
         scoreg = re.search(r'score">\((.+?)\)<', html_jav_library)
         if scoreg:
             jav_model.Score = int(float(scoreg.group(1)) * 10)

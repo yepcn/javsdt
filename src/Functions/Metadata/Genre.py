@@ -3,10 +3,10 @@ import os
 import xlrd
 
 
-# 功能：得到优化的特征字典
-# 参数：用户在用哪个exe（对应要在表格中取哪一列） ，简繁中文to_language   示例：Javbus有码 ，zh
-# 返回：优化的特征字典
-# 辅助：xlrd
+# 功能: 得到优化的特征字典
+# 参数: 用户在用哪个exe（对应要在表格中取哪一列） ，简繁中文to_language   示例: Javbus有码 ，zh
+# 返回: 优化的特征字典
+# 辅助: xlrd
 def better_dict_genres(website, to_language):
     # 返回一个字典 {'伴侶': '招待小姐'}
     dict_genres = {}

@@ -2,13 +2,13 @@
 import requests
 import re
 from MyEnum import ScrapeStatusEnum
-from prepare import write_new_arzon_phpsessid
+from Prepare import write_new_arzon_phpsessid
 # from traceback import format_exc
 
 
-# 功能：获取一个arzon_cookie
-# 参数：代理proxy
-# 返回：cookies
+# 功能: 获取一个arzon_cookie
+# 参数: 代理proxy
+# 返回: cookies
 def steal_arzon_cookies(proxy):
     print('\n正在尝试通过 https://www.arzon.jp 的成人验证...')
     for retry in range(10):
@@ -33,14 +33,14 @@ def steal_arzon_cookies(proxy):
             # print(format_exc())
             print('通过失败，重新尝试...')
             continue
-    input('>>请检查你的网络环境是否可以打开：https://www.arzon.jp/')
+    input('>>请检查你的网络环境是否可以打开: https://www.arzon.jp/')
 
 
-# 功能：搜索arzon，或请求arzon上jav所在网页
-# 参数：网址url，请求头部header/cookies，代理proxy
-# 返回：网页html
+# 功能: 搜索arzon，或请求arzon上jav所在网页
+# 参数: 网址url，请求头部header/cookies，代理proxy
+# 返回: 网页html
 def get_arzon_html(url, cookies, proxy):
-    # print('代理：', proxy)
+    # print('代理: ', proxy)
     for retry in range(10):
         try:
             if proxy:
@@ -61,25 +61,25 @@ def get_arzon_html(url, cookies, proxy):
         else:
             print('    >打开网页失败，空返回...重新尝试...')
             continue
-    input(f'>>请检查你的网络环境是否可以打开：{url}')
+    input(f'>>请检查你的网络环境是否可以打开: {url}')
 
 
-# 功能：从arzon上查找简介
-# 参数：车牌car，cookies，proxy
-# 返回：简介，执行完成状态码，cookies
+# 功能: 从arzon上查找简介
+# 参数: 车牌car，cookies，proxy
+# 返回: 简介，执行完成状态码，cookies
 def scrape_from_arzon(jav_file, jav_model, cookies, proxy):
     for retry in range(2):
         url_search_arzon = f'https://www.arzon.jp/itemlist.html?t=&m=all&s=&q={jav_file.Car_id.replace("-", "")}'
-        print('    >查找简介：', url_search_arzon)
+        print('    >搜索arzon: ', url_search_arzon)
         # 得到arzon的搜索结果页面
         html_search_arzon = get_arzon_html(url_search_arzon, cookies, proxy)
         # <dt><a href="https://www.arzon.jp/item_1376110.html" title="限界集落 ～村民"><img src=
-        list_search_results = re.findall(r'h2><a href="/item_(.+?)" title=', html_search_arzon)  # 所有搜索结果链接
+        list_search_results = re.findall(r'h2><a href="/item_(.+?)\.html" title=', html_search_arzon)  # 所有搜索结果链接
         # 搜索结果为N个AV的界面
         if list_search_results:  # arzon有搜索结果
             for url_each_result in list_search_results:
-                url_jav = f'https://www.arzon.jp/item_{url_each_result}'  # 第i+1个链接
-                print('    >获取简介：', url_jav)
+                url_jav = f'https://www.arzon.jp/item_{url_each_result}.html'  # 第i+1个链接
+                print('    >获取简介: ', url_jav)
                 # 打开arzon上每一个搜索结果的页面
                 html_jav_arzon = get_arzon_html(url_jav, cookies, proxy)
                 # 在该url_jav网页上查找简介
@@ -109,5 +109,5 @@ def scrape_from_arzon(jav_file, jav_model, cookies, proxy):
             else:
                 jav_model.Plot = '【影片下架，暂无简介】'
                 return ScrapeStatusEnum.arzon_not_found, cookies
-    input('>>请检查你的网络环境是否可以通过成人验证：https://www.arzon.jp/')
+    input('>>请检查你的网络环境是否可以通过成人验证: https://www.arzon.jp/')
     return ScrapeStatusEnum.interrupted, cookies

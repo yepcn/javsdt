@@ -9,10 +9,10 @@ def write_new_arzon_phpsessid(phpsessid):
     print('    >“保存新的arzon的phpsessid至【点我设置整理规则】.ini成功！')
 
 
-# 功能：得到素人车牌集合
-# 参数：无
-# 返回：素人车牌list
-# 辅助：无
+# 功能: 得到素人车牌集合
+# 参数: 无
+# 返回: 素人车牌list
+# 辅助: 无
 def get_suren_cars():
     try:
         with open('StaticFiles/【素人车牌】.txt', 'r', encoding="utf-8") as f:

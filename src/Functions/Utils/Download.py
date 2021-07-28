@@ -4,7 +4,7 @@ from PIL import Image
 
 
 # 下载图片，无返回
-# 参数：图片地址，存放路径，代理
+# 参数: 图片地址，存放路径，代理
 def download_pic(url, path, proxy):
     for retry in range(5):
         try:

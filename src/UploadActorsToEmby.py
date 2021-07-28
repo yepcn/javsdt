@@ -38,10 +38,10 @@ try:
     try:
         rqs_emby = requests.get(url=url_emby_persons)
     except requests.exceptions.ConnectionError:
-        input(f'无法访问emby服务端，请检查：{url_emby}\n')
+        input(f'无法访问emby服务端，请检查: {url_emby}\n')
     except:
         print(format_exc())
-        input(f'发生未知错误，请截图并联系作者：{url_emby}\n')
+        input(f'发生未知错误，请截图并联系作者: {url_emby}\n')
     # 401，无权访问
     if rqs_emby.status_code == 401:
         input('请检查api id是否正确！\n')
@@ -51,7 +51,7 @@ try:
     except:
         list_persons = []
         print(rqs_emby.text)
-        print('发生错误！emby返回内容如上：')
+        print('发生错误！emby返回内容如上: ')
         input('请截图并联系作者！')
     num_persons = len(list_persons)
     print(f'当前有{num_persons}个Person！\n')
@@ -71,7 +71,7 @@ try:
             actor_pic_path = f'{actor_pic_path}.png'
             header = {"Content-Type": 'image/png', }
         else:
-            print('>>暂无头像：', actor_name)
+            print('>>暂无头像: ', actor_name)
             f_txt = open("未收录的人员清单.txt", 'a', encoding="utf-8")
             f_txt.write(f'{actor_name}\n')
             f_txt.close()
@@ -91,21 +91,21 @@ try:
         f_pic.close()
         url_post_img = f'{url_emby}/emby/Items/{dic_each_actor["Id"]}/Images/Primary?api_key={api_key}'
         requests.post(url=url_post_img, data=b6_pic, headers=header)
-        print('>>设置成功：', actor_name)
+        print('>>设置成功: ', actor_name)
         num_suc += 1
 
     print('\nemby/jellyfin拥有人员', num_persons, '个！')
     print('已有头像', num_exist, '个！')
     if bool_replace:
-        print('当前模式：覆盖以前上传的头像')
+        print('当前模式: 覆盖以前上传的头像')
     else:
-        print('当前模式：跳过以前上传的头像')
+        print('当前模式: 跳过以前上传的头像')
     print('成功上传', num_suc, '个！')
     print('暂无头像', num_fail, '个！')
     input('已保存至“未收录的人员清单.txt”\n')
 except:
     print(format_exc())
-    print('发生错误！emby返回内容如上：')
+    print('发生错误！emby返回内容如上: ')
     input('请截图并联系作者！')
 
 

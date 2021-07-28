@@ -11,13 +11,13 @@ from Download import download_pic
 from MyLogger import record_video_old
 from MyError import TooManyDirectoryLevelsError, DownloadFanartError
 from Picture import check_picture, crop_poster_youma, add_watermark_subtitle, add_watermark_divulge
-from XML import replace_xml_win, replace_xml
+from Utils.XML import replace_xml_win, replace_xml
 from aip import AipBodyAnalysis
 
 # 设置
 from Car import find_car_fc2, find_car_youma
 from MyJav import JavFile
-from prepare import get_suren_cars
+from Prepare import get_suren_cars
 
 
 class Handler(object):
@@ -164,6 +164,8 @@ class Handler(object):
         self.dict_for_standard = self.get_dict_for_standard()
 
         # ####################################### 每次重新选择文件夹通用 ##############################################
+        # 选择的文件夹
+        self.dir_choose = ''
         # 归类的目标根文件夹
         self.dir_classify_target = ''
         # 当前视频（包括非jav）的编号，用于显示进度、获取最大视频编号即当前文件夹内视频数量
@@ -171,6 +173,8 @@ class Handler(object):
         # 当前所选文件夹内视频总数
         self.sum_videos_in_choose_dir = 0
         # ####################################### 每一级文件夹通用 ##############################################
+        # 当前for循环所处的这一级文件夹路径
+        self.dir_current = ''
         # 字幕文件和车牌对应关系 {'c:\a\abc_123.srt': 'abc-123'}
         self.dict_subtitle_file = {}
         # 存放: 每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
@@ -180,13 +184,15 @@ class Handler(object):
 
     # 每次用户选择文件夹后重置
     def rest_choose_dir(self, dir_choose):
+        self.dir_choose = dir_choose
         # self.dir_classify_target = ''  通过check_classify_target_directory重置
-        self.check_classify_target_directory(dir_choose)
+        self.check_classify_target_directory()
         self.no_current = 0
-        self.sum_videos_in_choose_dir = 0
+        self.sum_videos_in_choose_dir = self.count_num_videos()
 
     # 每层级文件夹重置
-    def rest_current_dir(self):
+    def rest_current_dir(self, dir_current):
+        self.dir_current = dir_current
         self.dict_subtitle_file = {}
         self.dict_car_episode = {}
         self.sum_videos_in_current_dir = 0
@@ -211,25 +217,25 @@ class Handler(object):
     # 参数: 用户选择整理的文件夹路径
     # 返回: 归类根目录路径
     # 辅助: os.sep，os.system
-    def check_classify_target_directory(self, dir_choose):
+    def check_classify_target_directory(self):
         # 检查 归类根目录 的合法性
         if self.bool_classify:
             custom_classify_target_dir = self._custom_classify_target_dir.rstrip(sep)
             # 用户使用默认的“所选文件夹”
             if custom_classify_target_dir == '所选文件夹':
-                self.dir_classify_target = f'{dir_choose}{sep}归类完成'
+                self.dir_classify_target = f'{self.dir_choose}{sep}归类完成'
             # 归类根目录 是 用户输入的路径c:\a，继续核实合法性
             else:
                 # 用户输入的路径 不是 所选文件夹dir_choose
-                if custom_classify_target_dir != dir_choose:
-                    if custom_classify_target_dir[:2] != dir_choose[:2]:
+                if custom_classify_target_dir != self.dir_choose:
+                    if custom_classify_target_dir[:2] != self.dir_choose[:2]:
                         input(f'归类的根目录: 【{custom_classify_target_dir}】和所选文件夹不在同一磁盘无法归类！请修正！')
                     if not os.path.exists(custom_classify_target_dir):
                         input(f'归类的根目录: 【{custom_classify_target_dir}】不存在！无法归类！请修正！')
                     self.dir_classify_target = custom_classify_target_dir
                 # 用户输入的路径 就是 所选文件夹dir_choose
                 else:
-                    self.dir_classify_target = f'{dir_choose}{sep}归类完成'
+                    self.dir_classify_target = f'{self.dir_choose}{sep}归类完成'
         else:
             self.dir_classify_target = ''
 
@@ -272,7 +278,7 @@ class Handler(object):
     # 参数: list_sub_files（当前文件夹的）子文件们
     # 返回: list_jav_files；更新self.dict_car_episode
     # 辅助: JavFile
-    def get_list_jav_files(self, list_sub_files, dir_current, dir_relative_current):
+    def get_list_jav_files(self, list_sub_files):
         list_jav_files = []  # 存放: 需要整理的jav_file
         for file_raw in list_sub_files:
             file_temp = file_raw.upper()
@@ -303,12 +309,25 @@ class Handler(object):
                     else:
                         car_id = car
                     # 将该jav的各种属性打包好，包括原文件名带扩展名、所在文件夹路径、第几集、所属字幕文件名
-                    jav_struct = JavFile(file_raw, dir_current, car, car_id, self.dict_car_episode[car], subtitle_file,
+                    jav_struct = JavFile(file_raw, self.dir_current, car, car_id, self.dict_car_episode[car], subtitle_file,
                                          self.no_current)
                     list_jav_files.append(jav_struct)
                 else:
-                    print(f'>>无法处理: {dir_relative_current}{sep}{file_raw}')
+                    print(f'>>无法处理: {self.dir_current[len(self.dir_choose):]}{sep}{file_raw}')
         return list_jav_files
+
+    # 功能：所选文件夹总共有多少个视频文件
+    # 参数：用户选择整理的文件夹路径root_choose，视频类型后缀集合tuple_video_type
+    # 返回：无
+    # 辅助：os.walk
+    def count_num_videos(self):
+        num_videos = 0
+        for root, dirs, files in os.walk(self.dir_choose):
+            for file_raw in files:
+                file_temp = file_raw.upper()
+                if file_temp.endswith(self._tuple_video_types) and not file_temp.startswith('.'):
+                    num_videos += 1
+        return num_videos
 
     # 功能: 处理多视频文件的问题，（1）所选文件夹总共有多少个视频文件，包括非jav文件，主要用于显示进度（2）同一车牌有多少cd，用于cd2...命名
     # 参数: list_jav_files
@@ -396,11 +415,14 @@ class Handler(object):
     def judge_separate_folder(self, len_list_jav_files, list_sub_dirs):
         # 当前文件夹下，车牌不止一个；还有其他非jav视频；有其他文件夹，除了演员头像文件夹“.actors”和额外剧照文件夹“extrafanart”；
         if len(self.dict_car_episode) > 1 or self.sum_videos_in_current_dir > len_list_jav_files:
-            return False
+            JavFile.Is_in_separate_folder = False
+            return
         for folder in list_sub_dirs:
             if folder != '.actors' and folder != 'extrafanart':
-                return False
-        return True  # 这一层文件夹是这部jav的独立文件夹
+                JavFile.Is_in_separate_folder = False
+                return
+        JavFile.Is_in_separate_folder = True  # 这一层文件夹是这部jav的独立文件夹
+        return
 
     # 功能: 根据【原文件名】和《已存在的、之前整理的nfo》，判断当前jav是否有“中文字幕”
     # 参数: ①当前jav所处文件夹路径dir_current ②jav文件名不带格式后缀name_no_ext，
@@ -616,6 +638,7 @@ class Handler(object):
                 # 如果这个文件夹是现成的，在它内部确认有没有“abc-123.mp4”。
                 if not os.path.exists(path_new):
                     os.rename(jav_file.Path, path_new)
+                    print('    >移动到独立文件夹完成')
                     # 移动字幕
                     if jav_file.Subtitle:
                         path_subtitle_new = f'{path_separate_folder}{sep}{jav_file.Subtitle}'  # 【临时变量】新的字幕路径
@@ -775,13 +798,10 @@ class Handler(object):
                 path_poster = path_poster.replace(jav_file.Cd, '')
             # emby需要多份，现在不是第一集，直接复制第一集的图片
             elif jav_file.Episode != 1:
-                try:
-                    copyfile(path_fanart.replace(jav_file.Cd, '-cd1'), path_fanart)
-                    print('    >fanart.jpg复制成功')
-                    copyfile(path_poster.replace(jav_file.Cd, '-cd1'), path_poster)
-                    print('    >poster.jpg复制成功')
-                except FileNotFoundError:
-                    pass
+                copyfile(path_fanart.replace(jav_file.Cd, '-cd1'), path_fanart)
+                print('    >fanart.jpg复制成功')
+                copyfile(path_poster.replace(jav_file.Cd, '-cd1'), path_poster)
+                print('    >poster.jpg复制成功')
             # kodi或者emby需要的第一份图片
             if check_picture(path_fanart):
                 # print('    >已有fanart.jpg')
@@ -793,7 +813,7 @@ class Handler(object):
                     print('    >从javdb下载封面: ', url_cover)
                     status = download_pic(url_cover, path_fanart, self.proxy_db)
                 if not status and jav_model.CoverBus:
-                    url_cover = jav_model.CoverBus
+                    url_cover = f'{self.url_bus}/pics/cover/{jav_model.CoverBus}'
                     print('    >从javbus下载封面: ', url_cover)
                     status = download_pic(url_cover, path_fanart, self.proxy_bus)
                 if not status and jav_model.CoverLibrary:

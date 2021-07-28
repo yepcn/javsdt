@@ -6,20 +6,20 @@ from os import sep
 from tkinter import filedialog, Tk, TclError
 
 
-# 功能：获取用户选取的文件夹路径
-# 参数：无
-# 返回：路径str
-# 辅助：tkinter.Tk，tkinter.filedialog，os.sep，sys
+# 功能: 获取用户选取的文件夹路径
+# 参数: 无
+# 返回: 路径str
+# 辅助: tkinter.Tk，tkinter.filedialog，os.sep，sys
 def choose_directory():
-    # 用户：选择需要整理的文件夹
-    print('请选择要整理的文件夹：', end='')
+    # 用户: 选择需要整理的文件夹
+    print('请选择要整理的文件夹: ', end='')
     for i in range(2):
         try:
             tk_new = Tk()
             tk_new.withdraw()
             path_work = filedialog.askdirectory()
             if path_work == '':
-                print('你没有选择目录! 请重新选：')
+                print('你没有选择目录! 请重新选: ')
                 time.sleep(2)
                 continue
             else:
