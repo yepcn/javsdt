@@ -2,8 +2,8 @@
 import re
 import requests
 from Class.MyEnum import ScrapeStatusEnum
-from MyError import SpecifiedUrlError
-from Utils.XML import replace_xml_win
+from Class.MyError import SpecifiedUrlError
+from Functions.Utils.XML import replace_xml_win
 # from traceback import format_exc
 
 

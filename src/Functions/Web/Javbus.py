@@ -4,11 +4,10 @@ import requests
 from Class.MyEnum import ScrapeStatusEnum
 # from traceback import format_exc
 
+from Class.MyError import SpecifiedUrlError
+
 
 # 搜索javbus，或请求javbus上jav所在网页，返回html
-from MyError import SpecifiedUrlError
-
-
 def get_bus_html(url, proxy):
     for retry in range(10):
         try:

@@ -39,10 +39,3 @@ class CutTypeEnum(IntEnum):
     middle = 2
     right = 3
     custom = 4
-
-
-class StandardStatusEnum(IntEnum):
-    interrupted = 0
-    success = 1
-    remaining_problem_case_sensitive = 2
-    file_exist_error = 3

@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*-
 import requests
 import re
-from MyEnum import ScrapeStatusEnum
-from Prepare import write_new_arzon_phpsessid
 # from traceback import format_exc
+from Class.MyEnum import ScrapeStatusEnum
+from Functions.Progress.Prepare import write_new_arzon_phpsessid
 
 
 # 功能: 获取一个arzon_cookie

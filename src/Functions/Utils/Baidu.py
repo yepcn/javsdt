@@ -11,6 +11,8 @@ from hashlib import md5
 # 返回: 中文简介string
 # 辅助: os.system, hashlib.md5，time.time，requests.get，json.loads
 def translate(api_id, api_key, word, to_lang):
+    if not word:
+        return ''
     for retry in range(10):
         # 把账户、翻译的内容、时间 混合md5加密，传给百度验证
         salt = str(time())[:10]

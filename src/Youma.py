@@ -10,13 +10,13 @@ from Class.MyJav import JavModel
 from Class.MyError import TooManyDirectoryLevelsError, SpecifiedUrlError
 from Functions.Progress.User import choose_directory
 from Functions.Metadata.Genre import better_dict_youma_genres
-from Functions.Web.Arzon import scrape_from_arzon
-from Functions.Web.Javbus import scrape_from_bus
+from Functions.Web.Javdb import scrape_from_db
 from Functions.Web.Javlibrary import scrape_from_library
+from Functions.Web.Javbus import scrape_from_bus
+from Functions.Web.Arzon import scrape_from_arzon
+from Functions.Utils.JsonUtility import read_json_to_dict
 
 #  main开始
-from Javdb import scrape_from_db
-from JsonUtility import read_json_to_dict
 
 print('1、这是测试版，仅对【有码】影片整理有效！！！有报错请联系！！！'
       '2、请自行将【无码】【素人】的影片移至他处，虽然也能整理部分，但可能出错！！！'
@@ -167,7 +167,9 @@ while not input_key:
                     genres.append('无码流出')
 
                 # 完善handler.dict_for_standard
-                handler.prefect_jav_model_and_dict_for_standard(jav_file, jav_model)
+                handler.prefect_jav_model(jav_model)
+                # 完善handler.dict_for_standard
+                handler.prefect_dict_for_standard(jav_file, jav_model)
                 # 完善jav_model.CompletionStatus
                 jav_model.prefect_completion_status()
                 # endregion

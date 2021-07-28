@@ -2,7 +2,8 @@
 import time
 from os.path import splitext, basename
 from os import sep
-from MyEnum import CompletionStatusEnum, CutTypeEnum
+
+from Class.MyEnum import CompletionStatusEnum, CutTypeEnum
 
 
 # 每一部jav的“结构体”
