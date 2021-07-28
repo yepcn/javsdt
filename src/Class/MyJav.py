@@ -9,7 +9,7 @@ from MyEnum import CompletionStatusEnum, CutTypeEnum
 class JavFile(object):
     def __init__(self, file_raw, dir_current, car, car_id, episode, subtitle, num_current):
         self.Car = car                                     # 车牌
-        self.Car_id = car_id                                     # 车牌
+        self.Car_id = car_id                               # 去bus和arzon搜索的车牌，不同在于Car_id是26ID-xxx，Car是ID-26xxx
         self.Pref = car.split('-')[0]                      # 车牌前缀
         self.Name = file_raw                               # 完整文件名 ABC-123-cd2.mp4；会在重命名过程中发生变化
         self.Ext = splitext(file_raw)[1].lower()           # 视频文件扩展名 .mp4
@@ -19,11 +19,11 @@ class JavFile(object):
         self.Subtitle = subtitle                           # 字幕文件名  ABC-123.srt；会在重命名过程中发生变化
         self.Ext_subtitle = splitext(subtitle)[1].lower()  # 字幕扩展名  .srt
         self.No = num_current                              # 当前处理的视频在所有视频中的编号，整理进度
-        self.Is_subtitle = False                           # 拥有字幕
-        self.Is_divulge = False                            # 是无码流出
+        self.Bool_subtitle = False                           # 拥有字幕
+        self.Bool_divulge = False                            # 是无码流出
 
     # 类属性
-    Is_in_separate_folder = False         # 是否拥有独立文件夹
+    Bool_in_separate_folder = False         # 是否拥有独立文件夹
 
     # 多cd，如果有两集，第一集cd1.第二集cd2；如果只有一集，为空
     @property
@@ -53,8 +53,8 @@ class JavFile(object):
 
 
 class JavModel(object):
-    def __init__(self, car):
-        self.Car = car                # 1 车牌
+    def __init__(self, **entries):
+        self.Car = ''                # 1 车牌
         self.CarOrigin = ''           # 2 原始车牌
         self.Series = ''              # 3 系列
         self.Title = ''               # 4 原标题
@@ -81,6 +81,7 @@ class JavModel(object):
         self.Actors = []              # 25 演员们
         self.Version = 1
         self.ModifyDate = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        self.__dict__.update(entries)
 
     def prefect_completion_status(self):
         if self.Javdb:

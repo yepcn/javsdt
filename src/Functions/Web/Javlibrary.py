@@ -92,6 +92,18 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
     # 标题
     if not jav_model.Title:
         jav_model.Title = re.search(r'<title>([A-Z].+?) - JAVLibrary</title>', html_jav_library).group(1)
+    if not jav_model.Car:
+        car_titleg = re.search(r'(.+?) (.+)', jav_model.Title)
+        # 车牌号
+        car_temp = car_titleg.group(1)
+        # 在javlibrary中，T-28 和 ID 的车牌很奇特。javlibrary是T-28XXX，而其他网站是T28-XXX；ID-20XXX，而其他网站是20ID-XXX。
+        if 'T-28' in car_temp:
+            car_temp = car_temp.replace('T-28', 'T28-', 1)
+        # elif 'ID-' in car_temp:
+        #     jav_tempg = re.search(r'ID-(\d\d)(\d\d\d)', car_temp)
+        #     if jav_tempg:
+        #         car_temp = jav_tempg.group(1) + 'ID-' + jav_tempg.group(2)
+        jav_model.Car = car_temp
     # javlibrary的精彩影评   (.+?\s*.*?\s*.*?\s*.*?) 下面的匹配可能很奇怪，没办法，就这么奇怪
     review = ''
     list_all_reviews = re.findall(

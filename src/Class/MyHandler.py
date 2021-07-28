@@ -7,6 +7,7 @@ from configparser import RawConfigParser
 from shutil import copyfile
 from xml.etree.ElementTree import parse, ParseError
 
+from Baidu import translate
 from Download import download_pic
 from MyLogger import record_video_old
 from MyError import TooManyDirectoryLevelsError, DownloadFanartError
@@ -27,7 +28,7 @@ class Handler(object):
         config_settings.read('【点我设置整理规则】.ini', encoding='utf-8-sig')
         # ###################################################### nfo ##################################################
         # 是否 跳过已存在nfo的文件夹，不处理已有nfo的文件夹
-        self._bool_skip = True if config_settings.get("收集nfo", "是否跳过已存在nfo的文件夹？") == '是' else False
+        # self._bool_skip = True if config_settings.get("收集nfo", "是否跳过已存在nfo的文件夹？") == '是' else False
         # 是否 收集nfo
         self.bool_nfo = True if config_settings.get("收集nfo", "是否收集nfo？") == '是' else False
         # 自定义 nfo中title的格式
@@ -126,7 +127,8 @@ class Handler(object):
         self.bool_review = True if config_settings.get("信息来源", "是否用javlibrary整理影片时收集网友的热评？") == '是' else False
         # ################################################## 其他设置 ##################################################
         # 是否 使用简体中文 简介翻译的结果和jav特征会变成“简体”还是“繁体”，影响影片特征和简介。
-        self.to_language = 'zh' if config_settings.get("其他设置", "简繁中文？") == '简' else 'cht'
+        # self.to_language = 'zh' if config_settings.get("其他设置", "简繁中文？") == '简' else 'cht'
+        self.to_language = 'zh'
         # 网址 javlibrary
         self.url_library = f'{config_settings.get("其他设置", "javlibrary网址").strip().rstrip("/")}/cn'
         # 网址 javbus
@@ -141,7 +143,7 @@ class Handler(object):
         self.int_title_len = int(config_settings.get("其他设置", "重命名中的标题长度（50~150）"))
         # ####################################### 百度翻译API ####################################################
         # 是否 把日语简介翻译为中文
-        self.bool_tran = True if config_settings.get("百度翻译API", "是否将简介翻译为中文？") == '是' else False
+        self.bool_tran = True if config_settings.get("百度翻译API", "是否使用翻译功能？") == '是' else False
         # 账户 百度翻译api
         self.tran_id = config_settings.get("百度翻译API", "APP ID")
         self.tran_sk = config_settings.get("百度翻译API", "密钥")
@@ -334,7 +336,6 @@ class Handler(object):
     # 返回: 无；更新self.sum_all_videos
     # 辅助: 无
     def count_num_and_no(self, list_jav_files):
-        self.sum_videos_in_choose_dir = self.no_current
         for jav_file in list_jav_files:
             jav_file.Sum_all_episodes = self.dict_car_episode[jav_file.Car]
 
@@ -396,6 +397,7 @@ class Handler(object):
             self.list_classify_basis.append(sep)
         return dict_for_standard
 
+    # 当前版本暂时不用这个
     # 功能: 判断当前一级文件夹是否含有nfo文件
     # 参数: 这层文件夹下的文件们
     # 返回: True
@@ -415,13 +417,13 @@ class Handler(object):
     def judge_separate_folder(self, len_list_jav_files, list_sub_dirs):
         # 当前文件夹下，车牌不止一个；还有其他非jav视频；有其他文件夹，除了演员头像文件夹“.actors”和额外剧照文件夹“extrafanart”；
         if len(self.dict_car_episode) > 1 or self.sum_videos_in_current_dir > len_list_jav_files:
-            JavFile.Is_in_separate_folder = False
+            JavFile.Bool_in_separate_folder = False
             return
         for folder in list_sub_dirs:
             if folder != '.actors' and folder != 'extrafanart':
-                JavFile.Is_in_separate_folder = False
+                JavFile.Bool_in_separate_folder = False
                 return
-        JavFile.Is_in_separate_folder = True  # 这一层文件夹是这部jav的独立文件夹
+        JavFile.Bool_in_separate_folder = True  # 这一层文件夹是这部jav的独立文件夹
         return
 
     # 功能: 根据【原文件名】和《已存在的、之前整理的nfo》，判断当前jav是否有“中文字幕”
@@ -475,22 +477,41 @@ class Handler(object):
     def judge_subtitle_and_divulge(self, jav_file):
         # 判断是否有中字的特征，条件有三满足其一即可: 1有外挂字幕 2文件名中含有“-C”之类的字眼 3旧的nfo中已经记录了它的中字特征
         if jav_file.Subtitle:
-            jav_file.Is_subtitle = True  # 判定成功
+            jav_file.Bool_subtitle = True  # 判定成功
         else:
-            jav_file.Is_subtitle = self.judge_exist_subtitle(jav_file.Dir, jav_file.Name_no_ext)
+            jav_file.Bool_subtitle = self.judge_exist_subtitle(jav_file.Dir, jav_file.Name_no_ext)
         # 判断是否是无码流出的作品，同理
-        jav_file.Is_divulge = self.judge_exist_divulge(jav_file.Dir, jav_file.Name_no_ext)
+        jav_file.Bool_divulge = self.judge_exist_divulge(jav_file.Dir, jav_file.Name_no_ext)
 
     # 功能: 用jav_file、jav_model中的原始数据完善dict_for_standard
     # 参数: jav_file 处理的jav视频文件对象，jav_model 保存jav元数据的对象
     # 返回: 无；更新dict_for_standard
     # 辅助: replace_xml_win，replace_xml_win
     def prefect_jav_model_and_dict_for_standard(self, jav_file, jav_model):
+        # 处理影片的标题过长  给用户重命名用的标题是缩减过的，nfo中是“完整标题”，但用户在ini中只用写“标题”
+        self.dict_for_standard['完整标题'] = replace_xml_win(jav_model.Title)
+        if len(self.dict_for_standard['完整标题']) > self.int_title_len:
+            self.dict_for_standard['标题'] = self.dict_for_standard['完整标题'][:self.int_title_len]
+        else:
+            self.dict_for_standard['标题'] = self.dict_for_standard['完整标题']
+        # 使用百度翻译
+        if self.bool_tran:
+            jav_model.TitleZh = translate(self.tran_id, self.tran_sk, jav_model.Title, self.to_language)
+            jav_model.PlotZh = translate(self.tran_id, self.tran_sk, jav_model.Plot, self.to_language)
+            # 处理影片的标题过长  给用户重命名用的标题是缩减过的，nfo中是“完整标题”，但用户在ini中只用写“标题”
+            self.dict_for_standard['完整中文标题'] = translate(self.tran_id, self.tran_sk, replace_xml_win(jav_model.TitleZh), self.to_language)
+            if len(self.dict_for_standard['完整标中文题']) > self.int_title_len:
+                self.dict_for_standard['中文标题'] = self.dict_for_standard['完整标中文题'][:self.int_title_len]
+            else:
+                self.dict_for_standard['中文标题'] = self.dict_for_standard['完整完整标题']
+        else:
+            self.dict_for_standard['完整中文标题'] = self.dict_for_standard['完整标题']
+            self.dict_for_standard['中文标题'] = self.dict_for_standard['标题']
         # 是否中字 是否无码流出
         self.judge_subtitle_and_divulge(jav_file)
         # '是否中字'这一命名元素被激活
-        self.dict_for_standard['是否中字'] = self.custom_subtitle_expression if jav_file.Is_subtitle else ''
-        self.dict_for_standard['是否流出'] = self.custom_divulge_expression if jav_file.Is_divulge else ''
+        self.dict_for_standard['是否中字'] = self.custom_subtitle_expression if jav_file.Bool_subtitle else ''
+        self.dict_for_standard['是否流出'] = self.custom_divulge_expression if jav_file.Bool_divulge else ''
         # 车牌
         self.dict_for_standard['车牌'] = jav_model.Car  # car可能发生了变化
         self.dict_for_standard['车牌前缀'] = jav_model.Car.split('-')[0]
@@ -514,12 +535,6 @@ class Handler(object):
             self.dict_for_standard['首个演员'] = jav_model.Actors[0]
         else:
             self.dict_for_standard['首个演员'] = self.dict_for_standard['全部演员'] = '有码演员'
-        # 处理影片的标题过长  给用户重命名用的标题是缩减过的，nfo中是“完整标题”，但用户在ini中只用写“标题”
-        self.dict_for_standard['完整标题'] = replace_xml_win(jav_model.Title)
-        if len(self.dict_for_standard['完整标题']) > self.int_title_len:
-            self.dict_for_standard['标题'] = self.dict_for_standard['完整标题'][:self.int_title_len]
-        else:
-            self.dict_for_standard['标题'] = self.dict_for_standard['完整标题']
         # 有些用户需要删去 标题末尾 可能存在的 演员姓名
         if self.bool_strip_actors and self.dict_for_standard['标题'].endswith(self.dict_for_standard['全部演员']):
             self.dict_for_standard['标题'] = self.dict_for_standard['标题'][:-len(self.dict_for_standard['全部演员'])].strip()
@@ -613,7 +628,7 @@ class Handler(object):
                 folder_new = f'{folder_new}{self.dict_for_standard[j]}'
             folder_new = folder_new.rstrip(' .')  # 【临时变量】新的所在文件夹。去除末尾空格和“.”
             # 是独立文件夹，才会重命名文件夹
-            if jav_file.Is_in_separate_folder:
+            if jav_file.Bool_in_separate_folder:
                 # 当前视频是该车牌的最后一集，他的兄弟姐妹已经处理完成，才会重命名它们的“家”。
                 if jav_file.Episode == jav_file.Sum_all_episodes:
                     dir_new = f'{os.path.dirname(jav_file.Dir)}{sep}{folder_new}'  # 【临时变量】新的影片所在文件夹路径。
@@ -656,7 +671,7 @@ class Handler(object):
     # 辅助: os.path.exists，os.makedirs, configparser.RawConfigParser, shutil.copyfile
     def collect_sculpture(self, jav_file, jav_model):
         if self._bool_sculpture and jav_file.Episode == 1:
-            if jav_model.Actors[0] == '有码演员':
+            if not jav_model.Actors:
                 print('    >未知演员，无法收集头像')
             else:
                 for each_actor in jav_model.Actors:
@@ -689,9 +704,9 @@ class Handler(object):
     # 辅助: os.exists, os.rename, os.makedirs，
     def classify_folder(self, jav_file):
         # 需要移动文件夹，且，是该影片的最后一集
-        if self.bool_classify and self._bool_classify_folder and jav_file.Episode == jav_file.num_all_episodes:
+        if self.bool_classify and self._bool_classify_folder and jav_file.Episode == jav_file.Sum_all_episodes:
             # 用户选择的文件夹是一部影片的独立文件夹，为了避免在这个文件夹里又生成新的归类文件夹
-            if jav_file.Is_in_separate_folder and self.dir_classify_target.startswith(jav_file.Dir):
+            if jav_file.Bool_in_separate_folder and self.dir_classify_target.startswith(jav_file.Dir):
                 raise TooManyDirectoryLevelsError(f'无法归类，不建议在当前文件夹内再新建文件夹')
             # 归类放置的目标文件夹
             dir_dest = f'{self.dir_classify_target}{sep}'
@@ -730,7 +745,7 @@ class Handler(object):
             # nfo中tilte的写法
             title_in_nfo = ''
             for i in self._list_name_nfo_title:
-                title_in_nfo += f'{title_in_nfo}{self.dict_for_standard[i]}'  # nfo中tilte的写法
+                title_in_nfo = f'{title_in_nfo}{self.dict_for_standard[i]}'  # nfo中tilte的写法
             # 开始写入nfo，这nfo格式是参考的kodi的nfo
             f = open(path_nfo, 'w', encoding="utf-8")
             f.write(f'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n'
@@ -804,6 +819,7 @@ class Handler(object):
                 print('    >poster.jpg复制成功')
             # kodi或者emby需要的第一份图片
             if check_picture(path_fanart):
+                # 这里有个遗留问题，如果已有的图片文件名是小写，比如abc-123 xx.jpg，现在path_fanart是大写ABC-123，无法改变，poster同理
                 # print('    >已有fanart.jpg')
                 pass
             else:
@@ -831,9 +847,9 @@ class Handler(object):
             else:
                 crop_poster_youma(path_fanart, path_poster)
                 # 需要加上条纹
-                if self._bool_watermark_subtitle and jav_file.bool_subtitle:
+                if self._bool_watermark_subtitle and jav_file.Bool_subtitle:
                     add_watermark_subtitle(path_poster)
-                if self._bool_watermark_divulge and jav_file.bool_divulge:
+                if self._bool_watermark_divulge and jav_file.Bool_divulge:
                     add_watermark_divulge(path_poster)
 
     # 功能: 如果需要为kodi整理头像，则先检查“演员头像for kodi.ini”、“演员头像”文件夹是否存在; 检查 归类根目录 的合法性
