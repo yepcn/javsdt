@@ -5,7 +5,7 @@
   
 ## 1、【一般用户】下载及群链接：  
 目前2021年2月7日更新的1.1.5版本  推荐使用win10 64位  
-[从蓝奏云下载](https://junerain.lanzoui.com/ib0qozg) 或者 [从github下载](https://github.com/javsdt/javsdt/releases/tag/V1.1.5)
+[从蓝奏云下载](https://junerain.lanzous.com/ivp8Plg6wza) 或者 [从github下载](https://github.com/javsdt/javsdt/releases/tag/V1.1.5)
   
 [前往下载演员头像](https://github.com/javsdt/javsdt/releases/tag/女优头像)   
   
@@ -13,7 +13,7 @@
 <!--[电报群](https://t.me/joinchat/PaHhgBaleu_qEgFy_NJlIA)（尽量进企鹅群，电报群真的没时间去了）-->   
   
 ## 2、[使用说明(还没写完)](https://github.com/javsdt/javsdt/wiki)  
-[旧版的使用说明从蓝奏云下载](https://www.lanzous.com/ib0qozg)  
+[旧版的使用说明从蓝奏云下载](https://junerain.lanzoui.com/ib0qozg)  
 
 ## 3、【其他开发者】运行环境：  
   python3.7.6 发行版是pyinstaller打包的exe  
