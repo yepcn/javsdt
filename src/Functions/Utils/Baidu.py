@@ -13,6 +13,9 @@ from hashlib import md5
 def translate(api_id, api_key, word, to_lang):
     if not word:
         return ''
+    if not api_id or not api_key:
+        print('    >你没有正确填写百度翻译api账户!!!')
+        return ''
     for retry in range(10):
         # 把账户、翻译的内容、时间 混合md5加密，传给百度验证
         salt = str(time())[:10]

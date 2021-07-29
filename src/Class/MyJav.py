@@ -45,7 +45,7 @@ class JavFile(object):
     # 视频文件名，但不带文件扩展名
     @property
     def Name_no_ext(self):
-        return splitext(self.Name)[0].lower()
+        return splitext(self.Name)[0]
 
     # 字幕文件完整路径
     @property

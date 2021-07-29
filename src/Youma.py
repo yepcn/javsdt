@@ -160,12 +160,13 @@ while not input_key:
                     # 整合genres
                     jav_model.Genres = genres = list(set(genres_db + genres_library + genres_bus))
 
-                # 完善genres
+                # 完善jav_file
+                handler.judge_subtitle_and_divulge(jav_file)
+                # 完善写入nfo中的genres
                 if jav_file.Bool_subtitle:  # 有“中字“，加上特征”中文字幕”
                     genres.append('中文字幕')
                 if jav_file.Bool_divulge:  # 是流出无码片，加上特征'无码流出'
                     genres.append('无码流出')
-
                 # 完善handler.dict_for_standard
                 handler.prefect_jav_model(jav_model)
                 # 完善handler.dict_for_standard

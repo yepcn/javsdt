@@ -112,7 +112,7 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
         for rev in list_all_reviews:
             list_reviews = re.findall(r'hidden">([\s\S]*?)</textarea>', rev, re.DOTALL)
             if list_reviews:
-                review = f'{review}{list_reviews[-1]}////'
+                review = f'{review}//{list_reviews[-1]}//'
         review = review.replace('\n', '').replace('\t', '').replace('\r', '').strip()
     jav_model.Review = review
     # print(review)

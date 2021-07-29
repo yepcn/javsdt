@@ -18,6 +18,7 @@ from Functions.Progress.Picture import check_picture, crop_poster_youma, add_wat
 from Functions.Utils.XML import replace_xml_win, replace_xml
 from Functions.Metadata.Car import find_car_fc2, find_car_youma
 
+
 # 设置
 class Handler(object):
     def __init__(self, pattern):
@@ -26,12 +27,12 @@ class Handler(object):
         config_settings.read('【点我设置整理规则】.ini', encoding='utf-8-sig')
         # ###################################################### 公式元素 ##############################################
         # 是否 去除 标题 末尾可能存在的演员姓名
-        self.bool_need_actors_end_of_title = True if config_settings.get("公式元素", "”标题“末尾保留演员姓名？") == '是' else False
+        self.bool_need_actors_end_of_title = True if config_settings.get("公式元素", "标题末尾保留演员姓名？") == '是' else False
         # ###################################################### nfo ##################################################
         # 是否 收集nfo
         self.bool_nfo = True if config_settings.get("收集nfo", "是否收集nfo？") == '是' else False
-        # 自定义 nfo中title的格式
-        self._list_name_nfo_title = config_settings.get("收集nfo", "title的格式").replace('标题', '完整标题', 1).split('+')
+        # 自定义 nfo中title的公式
+        self._list_name_nfo_title = config_settings.get("收集nfo", "title的公式").replace('标题', '完整标题', 1).split('+')
         # 是否 在nfo中plot写入中文简介，否则写原日语简介
         self.bool_need_zh_plot = True if config_settings.get("收集nfo", "plot是否使用中文简介？") == '是' else False
         # 自定义 将系列、片商等元素作为特征，因为emby不会直接在影片介绍页面上显示片商，也不会读取系列set
@@ -51,11 +52,11 @@ class Handler(object):
         # 是否 重命名 视频
         self.bool_rename_video = True if config_settings.get("重命名视频文件", "是否重命名视频文件？") == '是' else False
         # 自定义 重命名 视频
-        self._list_rename_video = config_settings.get("重命名视频文件", "重命名视频文件的格式").split('+')
+        self._list_rename_video = config_settings.get("重命名视频文件", "重命名视频文件的公式").split('+')
         # 是否 重命名视频所在文件夹，或者为它创建独立文件夹
         self._bool_rename_folder = True if config_settings.get("修改文件夹", "是否重命名或创建独立文件夹？") == '是' else False
         # 自定义 新的文件夹名  示例: ['车牌', '【', '全部演员', '】']
-        self._list_rename_folder = config_settings.get("修改文件夹", "新文件夹的格式").split('+')
+        self._list_rename_folder = config_settings.get("修改文件夹", "新文件夹的公式").split('+')
         # ######################################################### 归类 ###############################################
         # 是否 归类jav
         self.bool_classify = True if config_settings.get("归类影片", "是否归类影片？") == '是' else False
@@ -69,9 +70,9 @@ class Handler(object):
         # 是否 下载图片
         self._bool_jpg = True if config_settings.get("下载封面", "是否下载封面海报？") == '是' else False
         # 自定义 命名 大封面fanart
-        self._list_name_fanart = config_settings.get("下载封面", "fanart的格式").split('+')
+        self._list_name_fanart = config_settings.get("下载封面", "fanart的公式").split('+')
         # 自定义 命名 小海报poster
-        self._list_name_poster = config_settings.get("下载封面", "poster的格式").split('+')
+        self._list_name_poster = config_settings.get("下载封面", "poster的公式").split('+')
         # 是否 如果视频有“中字”，给poster的左上角加上“中文字幕”的斜杠
         self._bool_watermark_subtitle = True if config_settings.get("下载封面", "是否为poster加上中文字幕条幅？") == '是' else False
         # 是否 如果视频是“无码流出”，给poster的右上角加上“无码流出”的斜杠
@@ -135,11 +136,9 @@ class Handler(object):
         self._phpsessid = config_settings.get("其他设置", "arzon的phpsessid").strip()
         # 自定义 文件类型 只有列举出的视频文件类型，才会被处理
         self._tuple_video_types = tuple(config_settings.get("其他设置", "扫描文件类型").upper().split('、'))
-        # 自定义 命名格式中“标题”的长度 windows只允许255字符，所以限制长度，但nfo中的标题是全部
-        self.int_title_len = int(config_settings.get("其他设置", "重命名中的标题长度（50~150）"))
+        # 自定义 命名公式中“标题”的长度 windows只允许255字符，所以限制长度，但nfo中的标题是全部
+        self._int_title_len = int(config_settings.get("其他设置", "重命名中的标题长度（50~150）"))
         # ####################################### 百度翻译API ####################################################
-        # 是否 把日语简介翻译为中文
-        self.bool_tran = True if config_settings.get("百度翻译API", "是否启用翻译？") == '是' else False
         # 账户 百度翻译api
         self.tran_id = config_settings.get("百度翻译API", "APP ID")
         self.tran_sk = config_settings.get("百度翻译API", "密钥")
@@ -411,7 +410,7 @@ class Handler(object):
         return
 
     # 功能: 根据【原文件名】和《已存在的、之前整理的nfo》，判断当前jav是否有“中文字幕”
-    # 参数: ①当前jav所处文件夹路径dir_current ②jav文件名不带格式后缀name_no_ext，
+    # 参数: ①当前jav所处文件夹路径dir_current ②jav文件名不带文件类型后缀name_no_ext，
     # 返回: True
     # 辅助: os.path.exists，xml.etree.ElementTree.parse，xml.etree.ElementTree.ParseError
     def judge_exist_subtitle(self, dir_current, name_no_ext):
@@ -434,7 +433,7 @@ class Handler(object):
         return False
 
     # 功能: 根据【原文件名】和《已存在的、之前整理的nfo》，判断当前jav是否有“无码流出”
-    # 参数: ①当前jav所处文件夹路径dir_current ②jav文件名不带格式后缀name_no_ext
+    # 参数: ①当前jav所处文件夹路径dir_current ②jav文件名不带文件类型后缀name_no_ext
     # 返回: True
     # 辅助: os.path.exists，xml.etree.ElementTree.parse，xml.etree.ElementTree.ParseError
     def judge_exist_divulge(self, dir_current, name_no_ext):
@@ -471,23 +470,14 @@ class Handler(object):
     # 参数: jav_file 处理的jav视频文件对象，jav_model 保存jav元数据的对象
     # 返回: 无；更新dict_for_standard
     # 辅助: replace_xml_win，replace_xml_win
-    def prefect_jav_file(self, jav_file):
-        # 是否中字 是否无码流出
-        self.judge_subtitle_and_divulge(jav_file)
-
-    # 功能: 用jav_file、jav_model中的原始数据完善dict_for_standard
-    # 参数: jav_file 处理的jav视频文件对象，jav_model 保存jav元数据的对象
-    # 返回: 无；更新dict_for_standard
-    # 辅助: replace_xml_win，replace_xml_win
     def prefect_jav_model(self, jav_model):
         # 删去 标题末尾 可能存在的 演员姓名
         str_actors = ' '.join(jav_model.Actors)
-        if jav_model.Title.endswith(str_actors):
+        if str_actors and jav_model.Title.endswith(str_actors):
             jav_model.Title = jav_model.Title[:-len(str_actors)].strip()
         # 翻译出中文标题和简介
-        if self.bool_tran:
-            jav_model.TitleZh = translate(self.tran_id, self.tran_sk, jav_model.Title, self.to_language)
-            jav_model.PlotZh = translate(self.tran_id, self.tran_sk, jav_model.Plot, self.to_language)
+        jav_model.TitleZh = translate(self.tran_id, self.tran_sk, jav_model.Title, self.to_language)
+        jav_model.PlotZh = translate(self.tran_id, self.tran_sk, jav_model.Plot, self.to_language)
 
     # 功能: 用jav_file、jav_model中的原始数据完善dict_for_standard
     # 参数: jav_file 处理的jav视频文件对象，jav_model 保存jav元数据的对象
@@ -497,16 +487,17 @@ class Handler(object):
         # 标题
         str_actors = ' '.join(jav_model.Actors[:3])
         int_actors_len = len(str_actors) if self.bool_need_actors_end_of_title else 0
-        self.int_title_len = self.int_title_len - int_actors_len
+        int_current_len = self._int_title_len - int_actors_len
         self.dict_for_standard['完整标题'] = replace_xml_win(jav_model.Title)
-        self.dict_for_standard['中文完整标题'] = replace_xml_win(jav_model.TitleZh) if jav_model.TitleZh else self.dict_for_standard['完整标题']
+        self.dict_for_standard['中文完整标题'] = replace_xml_win(jav_model.TitleZh) \
+            if jav_model.TitleZh else self.dict_for_standard['完整标题']
         # 处理影片的标题过长。用户只需要在ini中写“标题”，但事实上，文件重命名操作中的“标题“是删减过的标题，nfo中的标题才是完整标题
-        if len(self.dict_for_standard['完整标题']) > self.int_title_len:
-            self.dict_for_standard['标题'] = self.dict_for_standard['完整标题'][:self.int_title_len]
+        if len(self.dict_for_standard['完整标题']) > int_current_len:
+            self.dict_for_standard['标题'] = self.dict_for_standard['完整标题'][:int_current_len]
         else:
             self.dict_for_standard['标题'] = self.dict_for_standard['完整标题']
-        if len(self.dict_for_standard['中文完整标题']) > self.int_title_len:
-            self.dict_for_standard['中文标题'] = self.dict_for_standard['中文完整标题'][:self.int_title_len]
+        if len(self.dict_for_standard['中文完整标题']) > int_current_len:
+            self.dict_for_standard['中文标题'] = self.dict_for_standard['中文完整标题'][:int_current_len]
         else:
             self.dict_for_standard['中文标题'] = self.dict_for_standard['中文完整标题']
         if self.bool_need_actors_end_of_title:
@@ -832,7 +823,8 @@ class Handler(object):
                 status = False
                 if jav_model.Javdb:
                     url_cover = f'https://jdbimgs.com/covers/{jav_model.Javdb[:2].lower()}/{jav_model.Javdb}.jpg'
-                    print('    >从javdb下载封面: ', url_cover)
+                    # print('    >从javdb下载封面: ', url_cover)
+                    print('    >下载封面: ...')
                     status = download_pic(url_cover, path_fanart, self.proxy_db)
                 if not status and jav_model.CoverBus:
                     url_cover = f'{self.url_bus}/pics/cover/{jav_model.CoverBus}'
