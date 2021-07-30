@@ -524,7 +524,7 @@ class Handler(object):
         self.dict_for_standard['发行商'] = replace_xml_win(jav_model.Publisher) if jav_model.Publisher else '有码发行商'
         self.dict_for_standard['制作商'] = replace_xml_win(jav_model.Studio) if jav_model.Studio else '有码制作商'
         # 评分 系列
-        self.dict_for_standard['评分'] = jav_model.Score
+        self.dict_for_standard['评分'] = jav_model.Score/10
         self.dict_for_standard['系列'] = jav_model.Series if jav_model.Series else '有码系列'
         # 全部演员（最多7个） 和 第一个演员
         if jav_model.Actors:
@@ -751,8 +751,8 @@ class Handler(object):
                     f'  <title>{title_in_nfo}</title>\n'
                     f'  <originaltitle>{jav_model.Car} {replace_xml(jav_model.Title)}</originaltitle>\n'
                     f'  <director>{replace_xml(jav_model.Director)}</director>\n'
-                    f'  <rating>{jav_model.Score}</rating>\n'
-                    f'  <criticrating>{int(jav_model.Score * 10)}</criticrating>\n'  # 烂番茄评分 用上面的评分*10
+                    f'  <rating>{jav_model.Score/10}</rating>\n'
+                    f'  <criticrating>{jav_model.Score}</criticrating>\n'  # 烂番茄评分 用上面的评分*10
                     f'  <year>{jav_model.Release[0:4]}</year>\n'
                     f'  <mpaa>NC-17</mpaa>\n'
                     f'  <customrating>NC-17</customrating>\n'

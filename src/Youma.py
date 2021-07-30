@@ -17,12 +17,6 @@ from Functions.Web.Arzon import scrape_from_arzon
 from Functions.Utils.JsonUtility import read_json_to_dict
 
 #  main开始
-
-print('1、这是测试版，仅对【有码】影片整理有效！！！有报错请联系！！！'
-      '2、请自行将【无码】【素人】的影片移至他处，虽然也能整理部分，但可能出错！！！'
-      '   例如报错”新的特征需添加至【特征对照表】“，因为暂时只收纳了有码特征！！！'
-      '3、”繁简“功能暂不支持，默认简体')
-
 # region（1）读取配置文件
 print('正在读取ini中的设置...', end='')
 try:
@@ -158,9 +152,10 @@ while not input_key:
                     # endregion
                     # region（3.2.2.6）后续完善操作
                     # 整合genres
-                    jav_model.Genres = genres = list(set(genres_db + genres_library + genres_bus))
+                    genres = list(set(genres_db + genres_library + genres_bus))
+                    jav_model.Genres = [genre for genre in genres]
 
-                # 完善jav_file
+                    # 完善jav_file
                 handler.judge_subtitle_and_divulge(jav_file)
                 # 完善写入nfo中的genres
                 if jav_file.Bool_subtitle:  # 有“中字“，加上特征”中文字幕”
