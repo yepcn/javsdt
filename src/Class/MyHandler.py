@@ -743,7 +743,7 @@ class Handler(object):
             for i in self._list_name_nfo_title:
                 title_in_nfo = f'{title_in_nfo}{self.dict_for_standard[i]}'  # nfo中tilte的写法
             # 开始写入nfo，这nfo格式是参考的kodi的nfo
-            plot = replace_xml(jav_model.PlotZh) if self.bool_need_zh_plot else jav_model.Plot
+            plot = replace_xml(jav_model.PlotZh) if self.bool_need_zh_plot else replace_xml(jav_model.Plot)
             f = open(path_nfo, 'w', encoding="utf-8")
             f.write(f'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n'
                     f'<movie>\n'
