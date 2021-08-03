@@ -18,3 +18,5 @@
 
 /javsdt/*.txt
 !/javsdt/【素人车牌】.txt
+javsdt/Pipfile
+javsdt/pip
