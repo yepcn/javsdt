@@ -81,6 +81,8 @@ class Settings(object):
         self._bool_321_proxy = True if config_settings.get("局部代理", "是否代理jav321？") == '是' else False
         # 是否 代理javdb，还有代理javdb上的图片
         self._bool_db_proxy = True if config_settings.get("局部代理", "是否代理javdb？") == '是' else False
+        # 是否 代理javbook，还有代理javbook上的图片
+        self._bool_book_proxy = True if config_settings.get("局部代理", "是否代理javdbook？") == '是' else False
         # 是否 代理arzon
         self._bool_arzon_proxy = True if config_settings.get("局部代理", "是否代理arzon？") == '是' else False
         # 是否 代理dmm图片，javlibrary和javdb上的有码图片几乎都是直接引用dmm
@@ -114,6 +116,8 @@ class Settings(object):
         self._url_bus = config_settings.get("其他设置", "javbus网址")
         # 网址 javdb
         self._url_db = config_settings.get("其他设置", "javdb网址")
+        # 网址 javbook
+        self._url_book = config_settings.get("其他设置", "javbook网址")
         # 自定义 文件类型 只有列举出的视频文件类型，才会被处理
         self._custom_file_type = config_settings.get("其他设置", "扫描文件类型")
         # 自定义 命名格式中“标题”的长度 windows只允许255字符，所以限制长度，但nfo中的标题是全部
@@ -228,6 +232,7 @@ class Settings(object):
             proxy_bus = proxies if self._bool_bus_proxy else {}  # 请求javbus时传递的参数
             proxy_321 = proxies if self._bool_321_proxy else {}  # 请求jav321时传递的参数
             proxy_db = proxies if self._bool_db_proxy else {}  # 请求javdb时传递的参数
+            proxy_book = proxies if self._bool_book_proxy else {}  # 请求javbook时传递的参数
             proxy_arzon = proxies if self._bool_arzon_proxy else {}  # 请求arzon时传递的参数
             proxy_dmm = proxies if self._bool_dmm_proxy else {}  # 请求dmm图片时传递的参数
         else:
@@ -235,9 +240,10 @@ class Settings(object):
             proxy_bus = {}
             proxy_321 = {}
             proxy_db = {}
+            proxy_book = {}
             proxy_arzon = {}
             proxy_dmm = {}
-        return proxy_library, proxy_bus, proxy_321, proxy_db, proxy_arzon, proxy_dmm
+        return proxy_library, proxy_bus, proxy_321, proxy_db, proxy_book, proxy_arzon, proxy_dmm
 
     # #########################[原影片文件的性质]##############################
     # 得到代表中字的文字list
@@ -294,6 +300,14 @@ class Settings(object):
         else:
             url_db = self._url_db
         return url_db
+
+    # javbook网址
+    def get_url_book(self):
+        if not self._url_book.endswith('/'):
+            url_book = self._url_book + '/'
+        else:
+            url_book = self._url_book
+        return url_book
 
     # 得到扫描文件类型
     def tuple_video_type(self):

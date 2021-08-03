@@ -49,7 +49,7 @@ sep = os.sep
 check_actors(settings.bool_sculpture)
 
 # 局部代理：哪些站点需要代理。
-proxy_library, proxy_bus, proxy_321, proxy_db, proxy_arzon, proxy_dmm = settings.get_proxy()
+proxy_library, proxy_bus, proxy_321, proxy_db, proxy_book, proxy_arzon, proxy_dmm = settings.get_proxy()
 
 # arzon通行证：如果需要在nfo中写入日语简介，需要先获得合法的arzon网站的cookie，用于通过成人验证。
 cookie_arzon = steal_arzon_cookies(proxy_arzon) if settings.bool_plot and settings.bool_nfo else {}
@@ -296,7 +296,7 @@ while input_start_key == '':
                 # DVD封面cover
                 coverg = re.search(r'bigImage" href="(.+?)">', html_web)  # 封面图片的正则对象
                 if str(coverg) != 'None':
-                    url_cover = coverg.group(1)
+                    url_cover = url_bus + coverg.group(1)
                 else:
                     url_cover = ''
                 # 发行日期
@@ -358,7 +358,7 @@ while input_start_key == '':
                 else:
                     dict_data['标题'] = title_only
                 # 特点
-                genres = re.findall(r'genre"><a href=".+?">(.+?)</a></span>', html_web)
+                genres = re.findall(r'<a href=".+?">(.+?)</a></label>', html_web)
                 if bool_subtitle:  # 有“中字“，加上特征”中文字幕”
                     genres.append('中文字幕')
                 if bool_divulge:  # 是流出无码片，加上特征'无码流出'
@@ -394,7 +394,7 @@ while input_start_key == '':
                 else:
                     plot = ''
                 #######################################################################
-                dict_data['视频'] = dict_data['原文件名'] = jav.name_no_ext    # dict_data['视频']，先定义为原文件名，即将发生变化。
+                dict_data['视频'] = dict_data['原文件名'] = jav.name_no_ext  # dict_data['视频']，先定义为原文件名，即将发生变化。
                 dict_data['原文件夹名'] = jav.folder
                 # 是CD1还是CDn？
                 num_all_episodes = dict_car_pref[jav.car]  # 该车牌总共多少集

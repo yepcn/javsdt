@@ -71,6 +71,7 @@ try:
     config_settings.set("其他设置", "javlibrary网址", "https://www.b47w.com/")
     config_settings.set("其他设置", "javbus网址", "https://www.buscdn.me")
     config_settings.set("其他设置", "javdb网址", "https://javdb6.com/")
+    config_settings.set("其他设置", "javbook网址", "https://javbooks.com/")
     config_settings.set("其他设置", "扫描文件类型", "mp4、mkv、avi、wmv、iso、rmvb、flv、ts")
     config_settings.set("其他设置", "重命名中的标题长度（50~150）", "50")
     config_settings.add_section("百度翻译API")

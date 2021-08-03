@@ -306,7 +306,7 @@ while input_start_key == '':
                 # DVD封面cover
                 coverg = re.search(r'bigImage" href="(.+?)">', html_web)  # 封面图片的正则对象
                 if str(coverg) != 'None':
-                    url_cover = coverg.group(1)
+                    url_cover = url_bus + coverg.group(1)
                 else:
                     url_cover = ''
                 # 发行日期
@@ -368,7 +368,7 @@ while input_start_key == '':
                 else:
                     dict_data['标题'] = title_only
                 # 特点
-                genres = re.findall(r'genre"><a href=".+?">(.+?)</a></span>', html_web)
+                genres = re.findall(r'<a href=".+?">(.+?)</a></label>', html_web)
                 if bool_subtitle:  # 有“中字“，加上特征”中文字幕”
                     genres.append('中文字幕')
                 try:

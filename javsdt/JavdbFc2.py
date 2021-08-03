@@ -56,7 +56,7 @@ sep = os.sep
 check_actors(settings.bool_sculpture)
 
 # 局部代理：哪些站点需要代理。
-proxy_library, proxy_bus, proxy_321, proxy_db, proxy_arzon, proxy_dmm = settings.get_proxy()
+proxy_library, proxy_bus, proxy_321, proxy_db, proxy_book, proxy_arzon, proxy_dmm = settings.get_proxy()
 
 # javdb网址：
 url_db = settings.get_url_db()
@@ -235,7 +235,7 @@ while input_start_key == '':
                         continue  # 【退出对该jav的整理】
                 # 用户没有指定网址，则去搜索
                 else:
-                    url_search_web = url_db + 'search?q=' + jav.car + '&f=all'
+                    url_search_web = url_db + 'search?q=' + jav.car + '&locale=zh&f=all'
                     print('    >搜索车牌：', url_search_web)
                     # 得到javdb搜索网页html
                     html_web, cookies = get_search_db_html(url_search_web, cookies, proxy_db)

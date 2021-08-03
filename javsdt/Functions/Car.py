@@ -139,3 +139,34 @@ def list_suren_car():
     list_suren_cars = [i.strip().upper() for i in list_suren_cars if i != '\n']
     # print(list_suren_cars)
     return list_suren_cars
+
+
+# 功能：发现原视频文件名中用于javdb的有码车牌&素人车牌
+# 参数：大写后的视频文件名，素人车牌list_suren_car    示例：AVOP-127.MP4    ['LUXU', 'MIUM']
+# 返回：发现的车牌    示例：AVOP-127
+# 辅助：re.search
+def find_car_db(file):
+    # car_pref 车牌前缀 ABP-，带横杠；car_suf，车牌后缀 123。
+    # 先处理特例 T28 车牌
+    if re.search(r'[^A-Z]?T28[-_ ]*\d\d+', file):
+        car_pref = 'T28-'
+        car_suf = re.search(r'T28[-_ ]*(\d\d+)', file).group(1)
+    # 以javbus上记录的20ID-020为标准
+    elif re.search(r'[^\d]?\d\dID[-_ ]*\d\d+', file):
+        carg = re.search(r'(\d\d)ID[-_ ]*(\d\d+)', file)
+        car_pref = carg.group(1) + 'ID-'
+        car_suf = carg.group(2)
+    # 一般车牌
+    elif re.search(r'[A-Z]+[-_ ]*\d\d+', file):
+        carg = re.search(r'([A-Z]+)[-_ ]*(\d\d+)', file)
+        car_pref = carg.group(1)
+        if car_pref in ['HEYZO', 'PONDO', 'CARIB', 'OKYOHOT']:
+            return ''
+        car_pref = car_pref + '-'
+        car_suf = carg.group(2)
+    else:
+        return ''
+    # 去掉太多的0，avop00127 => avop-127
+    if len(car_suf) > 3:
+        car_suf = car_suf[:-3].lstrip('0') + car_suf[-3:]
+    return car_pref + car_suf

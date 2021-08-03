@@ -1,40 +1,39 @@
 # -*- coding:utf-8 -*-
-import os
-import re
+import os, re
 from shutil import copyfile
 from traceback import format_exc
-
-from Class.JavFile import JavFile
 ########################################################################################################################
 from Class.Settings import Settings
-from Functions.Baidu import translate
-from Functions.Car import find_car_suren, list_suren_car
-from Functions.Picture import add_watermark_divulge, crop_poster_default
-from Functions.Picture import check_picture, add_watermark_subtitle
-# ################################################## 不同 ##########################################################
-from Functions.Process import judge_exist_divulge
-from Functions.Process import judge_exist_subtitle
-from Functions.Process import perfect_dict_data
-from Functions.Record import record_start, record_fail
-from Functions.Requests.Download import download_pic
-from Functions.Requests.Jav321Req import get_321_html, post_321_html
-from Functions.Standard import rename_mp4, rename_folder, classify_files, classify_folder
-from Functions.Status import check_actors
+from Class.JavFile import JavFile
 from Functions.Status import judge_exist_nfo, judge_exist_extra_folders, count_num_videos
 from Functions.User import choose_directory
+from Functions.Record import record_start, record_fail, record_warn
+from Functions.Process import perfect_dict_data
+from Functions.Standard import rename_mp4, rename_folder, classify_files, classify_folder
 from Functions.XML import replace_xml, replace_xml_win
+from Functions.Process import judge_exist_subtitle
+from Functions.Picture import check_picture, add_watermark_subtitle
+from Functions.Requests.Download import download_pic
+from Functions.Genre import better_dict_genre
+# ################################################## 不同 ##########################################################
+from Functions.Process import judge_exist_divulge
+from Functions.Status import check_actors
+from Functions.Car import find_car_bus, list_suren_car
+from Functions.Standard import collect_sculpture
+from Functions.Baidu import translate
+from Functions.Picture import add_watermark_divulge, crop_poster_baidu, crop_poster_default, crop_poster_youma
+from Functions.Requests.JavbookReq import get_book_html, post_book_html
+from Functions.Requests.ArzonReq import steal_arzon_cookies, find_plot_arzon
 
 
 #  main开始
-print('1、请开启代理，建议美国节点，访问“https://www.jav321.com/”\n'
-      '2、影片信息没有导演，没有演员头像，可能没有演员姓名\n'
-      '3、只能整理列出车牌的素人影片\n'
-      '   如有素人车牌识别不出，请在ini中添加该车牌，或者告知作者\n')
+print('1、避开21:00-1:00，访问javbooks和arzon很慢。\n'
+      '2、若一直打不开javbooks，请在ini中更新防屏蔽网址\n')
 
 # 读取配置文件，这个ini文件用来给用户设置
 print('正在读取ini中的设置...', end='')
 try:
-    settings = Settings('素人')
+    settings = Settings('有码')
 except:
     settings = None
     print(format_exc())
@@ -51,31 +50,34 @@ check_actors(settings.bool_sculpture)
 # 局部代理：哪些站点需要代理。
 proxy_library, proxy_bus, proxy_321, proxy_db, proxy_book, proxy_arzon, proxy_dmm = settings.get_proxy()
 
-# jav321网址 搜索网址 https://www.jav321.com/search https://www.jav321.com/
-url_search_321, url_321 = settings.get_url_321()
+# arzon通行证：如果需要在nfo中写入日语简介，需要先获得合法的arzon网站的cookie，用于通过成人验证。
+cookie_arzon = steal_arzon_cookies(proxy_arzon) if settings.bool_plot and settings.bool_nfo else {}
+
+# javdb网址：
+url_book = settings.get_url_book()
 
 # 选择简繁中文以及百度翻译账户：需要简体中文还是繁体中文，影响影片特征和简介。
 to_language, tran_id, tran_sk = settings.get_translate_account()
 
 # 信息字典：存放影片信息，用于给用户自定义各种命名。
 dict_data = {'车牌': 'ABC-123',
-             '车牌前缀': 'ABC',
-             '标题': '素人标题',
-             '完整标题': '完整素人标题',
-             '导演': '素人导演',
-             '片商': '素人片商',
-             '评分': '0',
-             '片长': '0',
-             '系列': '素人系列',
-             '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
-             '首个演员': '素人演员', '全部演员': '素人演员',
-             '空格': ' ',
-             '\\': sep, '/': sep,  # 文件路径分隔符
-             '是否中字': '',
-             '是否流出': '',
-             '影片类型': settings.av_type(),
-             '视频': 'ABC-123',  # 当前及未来的视频文件名，不带ext
-             '原文件名': 'ABC-123', '原文件夹名': 'ABC-123', }
+            '车牌前缀': 'ABC',
+            '标题': '有码标题',
+            '完整标题': '完整有码标题',
+            '导演': '有码导演',
+            '片商': '有码片商',
+            '评分': '0',
+            '片长': '0',
+            '系列': '有码系列',
+            '发行年月日': '1970-01-01', '发行年份': '1970', '月': '01', '日': '01',
+            '首个演员': '有码演员', '全部演员': '有码演员',
+            '空格': ' ',
+            '\\': sep, '/': sep,    # 文件路径分隔符
+            '是否中字': '',
+            '是否流出': '',
+            '影片类型': settings.av_type(),
+            '视频': 'ABC-123',    # 当前及未来的视频文件名，不带ext
+            '原文件名': 'ABC-123', '原文件夹名': 'ABC-123', }
 
 # nfo中title的写法。
 list_name_nfo_title = settings.formula_name_nfo_title()
@@ -92,7 +94,7 @@ list_name_fanart = settings.formula_name_fanart()
 list_name_poster = settings.formula_name_poster()
 
 # 视频文件名包含哪些多余的字母数字，需要无视
-list_surplus_words_in_filename = settings.list_surplus_word_in_filename('素人')
+list_surplus_words_in_filename = settings.list_surplus_word_in_filename('有码')
 # 文件名包含哪些特殊含义的文字，判断是否中字
 list_subtitle_words_in_filename = settings.list_subtitle_word_in_filename()
 # 文件名包含哪些特殊含义的文字，判断是否是无码流出片
@@ -105,9 +107,10 @@ list_suren_cars = list_suren_car()
 tuple_video_types = settings.tuple_video_type()
 
 # 完善dict_data，如果用户自定义了一些文字，不在元素中，需要将它们添加进dict_data；list_classify_basis，归类标准，归类目标文件夹的组成公式。
-dict_data, list_classify_basis = perfect_dict_data(list_extra_genres, list_name_video, list_name_folder,
-                                                   list_name_nfo_title, list_name_fanart, list_name_poster,
-                                                   settings.custom_classify_basis(), dict_data)
+dict_data, list_classify_basis = perfect_dict_data(list_extra_genres, list_name_video, list_name_folder, list_name_nfo_title, list_name_fanart, list_name_poster, settings.custom_classify_basis(), dict_data)
+
+# 优化特征的字典
+dict_genre = better_dict_genre('Javlibrary', to_language)
 
 # 用户输入“回车”就继续选择文件夹整理
 input_start_key = ''
@@ -121,12 +124,14 @@ while input_start_key == '':
     # 归类：用户自定义的归类根目录，如果不需要归类则为空
     root_classify = settings.check_classify_root(root_choose, sep)
     # 计数：失败次数及进度
-    num_fail = 0  # 已经或可能导致致命错误，比如整理未完成，同车牌有不同视频
-    num_all_videos = count_num_videos(root_choose, tuple_video_types)  # 所选文件夹总共有多少个视频文件
-    num_current = 0  # 当前视频的编号
+    num_fail = 0   # 已经或可能导致致命错误，比如整理未完成，同车牌有不同视频
+    num_warn = 0   # 对整理结果不致命的问题，比如找不到简介
+    num_all_videos = count_num_videos(root_choose, tuple_video_types)    # 所选文件夹总共有多少个视频文件
+    num_current = 0    # 当前视频的编号
     print('...文件扫描开始...如果时间过长...请避开夜晚高峰期...\n')
     # root【当前根目录】 dirs【子文件夹】 files【文件】，root是str，后两个是list
     for root, dirs, files in os.walk(root_choose):
+        print('...文件处理开始...', files)
         # 什么文件都没有
         if not files:
             continue
@@ -137,10 +142,10 @@ while input_start_key == '':
         if settings.bool_skip and judge_exist_nfo(files):
             continue
         # 对这一层文件夹进行评估,有多少视频，有多少同车牌视频，是不是独立文件夹
-        list_jav_struct = []  # 存放：需要整理的jav的结构体
-        dict_car_pref = {}  # 存放：每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
-        num_videos_include = 0  # 计数：当前文件夹中视频的数量，可能有视频不是jav
-        dict_subtitle_files = {}  # 存放：jav的字幕文件和车牌对应关系 {'c:\a\abc_123.srt': 'abc-123'}
+        list_jav_struct = []               # 存放：需要整理的jav的结构体
+        dict_car_pref = {}                 # 存放：每一车牌的集数， 例如{'abp-123': 1, avop-789': 2}是指 abp-123只有一集，avop-789有cd1、cd2
+        num_videos_include = 0             # 计数：当前文件夹中视频的数量，可能有视频不是jav
+        dict_subtitle_files = {}               # 存放：jav的字幕文件和车牌对应关系 {'c:\a\abc_123.srt': 'abc-123'}
         # 判断文件是不是字幕文件，放入dict_subtitle_files中
         for file_raw in files:
             file_temp = file_raw.upper()
@@ -152,7 +157,7 @@ while input_start_key == '':
                 for word in list_surplus_words_in_filename:
                     file_temp = file_temp.replace(word, '')
                 # 得到字幕文件名中的车牌
-                subtitle_car = find_car_suren(file_temp, list_suren_cars)
+                subtitle_car = find_car_bus(file_temp, list_suren_cars)
                 # 将该字幕文件和其中的车牌对应到dict_subtitle_files中
                 if subtitle_car:
                     dict_subtitle_files[file_raw] = subtitle_car
@@ -163,12 +168,13 @@ while input_start_key == '':
             if file_temp.endswith(tuple_video_types) and not file_temp.startswith('.'):
                 num_videos_include += 1
                 num_current += 1
+                # 仅处理fc2
                 if 'FC2' in file_temp:
                     continue
                 for word in list_surplus_words_in_filename:
                     file_temp = file_temp.replace(word, '')
                 # 得到视频中的车牌
-                car = find_car_suren(file_temp, list_suren_cars)
+                car = find_car_bus(file_temp, list_suren_cars)
                 if car:
                     try:
                         dict_car_pref[car] += 1  # 已经有这个车牌了，加一集cd
@@ -185,18 +191,18 @@ while input_start_key == '':
                     list_jav_struct.append(jav_struct)
                 else:
                     print('>>无法处理：', root.replace(root_choose, '') + sep + file_raw)
-
+        # print(list_jav_struct)
         # 判定影片所在文件夹是否是独立文件夹，独立文件夹是指该文件夹仅用来存放该影片，而不是大杂烩文件夹
         # 这一层文件夹下有jav
         if dict_car_pref:
             # 当前文件夹下，车牌不止一个；还有其他非jav视频；有其他文件夹，除了演员头像文件夹“.actors”和额外剧照文件夹“extrafanart”；
             if len(dict_car_pref) > 1 or num_videos_include > len(list_jav_struct) or judge_exist_extra_folders(dirs):
-                bool_separate_folder = False  # 不是独立的文件夹
+                bool_separate_folder = False   # 不是独立的文件夹
             else:
-                bool_separate_folder = True  # 这一层文件夹是这部jav的独立文件夹
+                bool_separate_folder = True    # 这一层文件夹是这部jav的独立文件夹
         else:
             continue
-
+        print('开始处理每一部jav')
         # 开始处理每一部jav
         for jav in list_jav_struct:
             # 告诉用户进度
@@ -205,8 +211,8 @@ while input_start_key == '':
 
             # 判断是否有中字的特征，条件有三满足其一即可：1有外挂字幕 2文件名中含有“-C”之类的字眼 3旧的nfo中已经记录了它的中字特征
             if jav.subtitle:
-                bool_subtitle = True  # 判定成功
-                dict_data['是否中字'] = settings.custom_subtitle_expression  # '是否中字'这一命名元素被激活
+                bool_subtitle = True    # 判定成功
+                dict_data['是否中字'] = settings.custom_subtitle_expression    # '是否中字'这一命名元素被激活
             else:
                 bool_subtitle = judge_exist_subtitle(root, jav.name_no_ext, list_subtitle_words_in_filename)
                 dict_data['是否中字'] = settings.custom_subtitle_expression if bool_subtitle else ''
@@ -217,91 +223,61 @@ while input_start_key == '':
             # 影片的相对于所选文件夹的路径，用于报错
             path_relative = sep + jav.path.replace(root_choose, '')
 
-            # 获取nfo信息的jav321网页
+            # 获取nfo信息的javdb网页
             try:
                 # 用户指定了网址，则直接得到jav所在网址
-                if '三二一' in jav.name:
-                    url_appointg = re.search(r'三二一(.+?)\.', jav.name)
+                if '图书馆' in jav.name:
+                    url_appointg = re.search(r'仓库(.+?)\.', jav.name)
                     if str(url_appointg) != 'None':
-                        url_on_web = url_321 + 'video/' + url_appointg.group(1)
-                        print('    >获取信息：', url_on_web)
-                        html_web = get_321_html(url_on_web, proxy_321)
-                        # 尝试找标题，jav321上的标题不包含车牌，title_only表示单纯的标题
-                        titleg = re.search(r'<h3>(.+?) <small>', html_web)  # 匹配处理“标题”
-                        # 搜索结果就是AV的页面
-                        if str(titleg) != 'None':
-                            title_only = titleg.group(1)
-                            print(title_only)
-                        # 找不到标题，jav321找不到影片
-                        else:
-                            # print(html_web)
-                            num_fail += 1
-                            record_fail('    >第' + str(num_fail) + '个失败！你指定的jav321网址找不到影片：' + path_relative + '\n')
-                            continue  # 【退出对该jav的整理】
+                        url_on_web = url_book + 'v/' + url_appointg.group(1)
                     else:
                         num_fail += 1
-                        record_fail('    >第' + str(num_fail) + '个失败！你指定的jav321网址有错误：' + path_relative + '\n')
+                        record_fail('    >第' + str(num_fail) + '个失败！你指定的javdb网址有错误：' + path_relative + '\n')
                         continue  # 【退出对该jav的整理】
                 # 用户没有指定网址，则去搜索
                 else:
-                    # 得到jav321搜索网页html
-                    print('    >搜索车牌：', url_search_321)
-                    html_web = post_321_html(url_search_321, {'sn': jav.car}, proxy_321)
-                    # print(html_web)
-                    # 尝试找标题
-                    titleg = re.search(r'h3>(.+?) <small>', html_web)  # 匹配处理“标题”
-                    # 找得到，搜索结果就是AV的页面
-                    if str(titleg) != 'None':
-                        title_only = titleg.group(1)
-                        # print(title_only)
-                    # 找不到标题，jav321找不到影片
+                    url_search_web = url_book + 'serch_censored.htm'
+                    # 得到javbook搜索网页html
+                    print('    >搜索车牌：', url_search_web)
+                    search_result = post_book_html(url_search_web, {'skey': jav.car}, proxy_book)
+                    # 尝试找Po_topic
+                    list_search_results = re.findall(r'Po_topic_title\'><a href=\'(.+?)\'>', search_result)
+                    # print(list_search_results)
+                    if list_search_results:  # 搜索结果页面只有一个box
+                        url_on_web = list_search_results[0]
+                    # 找不到box
                     else:
                         num_fail += 1
                         record_fail('    >第' + str(
-                            num_fail) + '个失败！jav321找不到该车牌的信息：' + jav.car + '，' + path_relative + '\n')
-                        continue  # 【退出对该jav的整理】
+                            num_fail) + '个失败！javdb找不到该车牌的信息：' + jav.car + '，' + path_relative + '\n')
+                        continue  # 【跳出对该jav的整理】
+                # 经过上面的三种情况，可能找到了jav在web上的网页链接url_on_web
+                print('    >获取信息：', url_on_web)
+                # 得到最终的jav所在网页
+                html_web = get_book_html(url_on_web, proxy_book)
 
-                # 去除xml文档和windows路径不允许的特殊字符 &<>  \/:*?"<>|
-                title_only = replace_xml_win(title_only)
-                # 正则匹配 影片信息 开始！
                 # 有大部分信息的html_web
-                html_web = re.search(r'(h3>.+?)async', html_web).group(1)
+                # html_web = re.search(r'h2 class([\s\S]*?)想看', html_web, re.DOTALL).group(1)
                 # print(html_web)
-                # 车牌
-                dict_data['车牌'] = car = re.search(r'番.?</b>: (.+?)<br>', html_web).group(1).upper()
-                dict_data['车牌前缀'] = car.split('-')[0]
-                # jav321上素人的title开头不是车牌
-                title = car + ' ' + title_only
-                # 给用户重命名用的标题是“短标题”，nfo中是“完整标题”，但用户在ini中只用写“标题”
-                dict_data['完整标题'] = title_only
-                # 处理影片的标题过长
-                if len(title_only) > settings.int_title_len:
-                    dict_data['标题'] = title_only[:settings.int_title_len]
-                else:
-                    dict_data['标题'] = title_only
+                # 标题
+                title = re.search(r'<div id="title"><b>(.+?)</b></div>', html_web).group(1).replace(' 中文字幕 ', '')
+                # 去除xml文档和windows路径不允许的特殊字符 &<>  \/:*?"<>|
+                title = replace_xml_win(title)
                 print('    >影片标题：', title)
+                title_only = title
+                # title的开头是车牌号，想要后面的纯标题
+                car_titleg = re.search(r'.htm\'>(.+?)</a></font></div>', html_web)
+                # 车牌号
+                dict_data['车牌'] = car = car_titleg.group(1)
+
                 # DVD封面cover
-                coverg = re.search(r'poster="(.+?)"><source', html_web)  # 封面图片的正则对象
+                coverg = re.search(r'<div class="info_cg" align="center"><img src="(.+?)" ></div>', html_web)  # 封面图片的正则对象
                 if str(coverg) != 'None':
                     url_cover = coverg.group(1)
-                else:  # src="http://pics.dmm.co.jp/digital/amateur/scute530/scute530jp-001.jpg"
-                    coverg = re.search(r'img-responsive" src="(.+?)"', html_web)  # 封面图片的正则对象
-                    if str(coverg) != 'None':
-                        url_cover = coverg.group(1)
-                    else:  # src="http://pics.dmm.co.jp/digital/amateur/scute530/scute530jp-001.jpg"
-                        coverg = re.search(r'src="(.+?)"', html_web)  # 封面图片的正则对象
-                        if str(coverg) != 'None':
-                            url_cover = coverg.group(1)
-                        else:
-                            url_cover = ''
-                # 下载海报 poster
-                posterg = re.search(r'img-responsive" src="(.+?)"', html_web)  # 封面图片的正则对象
-                if str(posterg) != 'None':
-                    url_poster = posterg.group(1)
                 else:
-                    url_poster = ''
+                    url_cover = ''
                 # 发行日期
-                premieredg = re.search(r'配信開始日</b>: (\d\d\d\d-\d\d-\d\d)<br>', html_web)
+                premieredg = re.search(r'(\d\d\d\d-\d\d-\d\d)', html_web)
                 if str(premieredg) != 'None':
                     dict_data['发行年月日'] = time_premiered = premieredg.group(1)
                     dict_data['发行年份'] = time_premiered[0:4]
@@ -313,80 +289,92 @@ while input_start_key == '':
                     dict_data['月'] = '01'
                     dict_data['日'] = '01'
                 # 片长 <td><span class="text">150</span> 分钟</td>
-                runtimeg = re.search(r'収録時間</b>: (\d+)', html_web)
+                runtimeg = re.search(r'影片時長：</b>(.+?)分', html_web)
                 if str(runtimeg) != 'None':
                     dict_data['片长'] = runtimeg.group(1)
                 else:
                     dict_data['片长'] = '0'
-                # 片商</b>: <a href="/company/%E83%A0%28PRESTIGE+PREMIUM%29/1">プレステージプレミアム(PRESTIGE PREMIUM)</a>
-                studiog = re.search(r'メーカー</b>: <a href="/company.+?">(.+?)</a>', html_web)
+                # 导演
+                dir = re.search(r'導演：</b>(.+?)</div>', html_web).group(1)
+                directorg = re.findall(r'>(.+?)</a>', dir)
+                if str(directorg) != 'None':
+                    dict_data['导演'] = replace_xml_win(','.join(directorg))
+                else:
+                    dict_data['导演'] = '有码导演'
+                # 片商 制作商
+                stud = re.search(r'發行商：</b>(.+?)</div>', html_web).group(1)
+                studiog = re.findall(r'>(.+?)</a>', stud)
                 if str(studiog) != 'None':
-                    dict_data['片商'] = studio = replace_xml_win(studiog.group(1))
+                    dict_data['片商'] = studio = replace_xml_win(','.join(studiog))
                 else:
-                    dict_data['片商'] = '素人片商'
+                    dict_data['片商'] = '有码片商'
                     studio = ''
-                # 演员们 和 # 第一个演员   演员</b>: 花音さん 21歳 床屋さん(家族経営) &nbsp
-                actorg = re.search(r'出演者</b>: (.+?) ', html_web)
-                if str(actorg) != 'None':
-                    actor_only = actorg.group(1)    # dcv-141 '紗綾さん/27歳/保育士'
-                    list_actor = actor_only.replace('/', ' ').split(' ')  # ['紗綾さん', '27歳', '保育士']
-                    list_actor = [i for i in list_actor if i]
-                    if list_actor:
-                        dict_data['首个演员'] = ' '.join(list_actor)
-                    else:
-                        dict_data['首个演员'] = '素人'
-                    dict_data['全部演员'] = dict_data['首个演员']
+                # 系列:</span> <a href="https://www.cdnbus.work/series/kpl">悪質シロウトナンパ</a>
+                ser = re.search(r'系列：</b>(.+?)</div>', html_web).group(1)
+                seriesg = re.findall(r'htm\'>(.+?)</a>', ser)
+                if str(seriesg) != 'None':
+                    dict_data['系列'] = series = ','.join(seriesg)
                 else:
-                    dict_data['首个演员'] = dict_data['全部演员'] = '素人'
+                    dict_data['系列'] = '有码系列'
+                    series = ''
+                # 演员们 和 # 第一个演员
+                act = re.search(r'女優：</b>(.+?)</div>', html_web).group(1)
+                actors = re.findall(r'htm\'>(.+?)</a>', act)
+                if actors:
+                    if len(actors) > 7:
+                        dict_data['全部演员'] = ' '.join(actors[:7])
+                    else:
+                        dict_data['全部演员'] = ' '.join(actors)
+                    dict_data['首个演员'] = actors[0]
+                    # 有些用户需要删去 标题 末尾可能存在的 演员姓名
+                    if settings.bool_strip_actors and title_only.endswith(dict_data['全部演员']):
+                        title_only = title_only[:-len(dict_data['全部演员'])].rstrip()
+                else:
+                    actors = ['有码演员']
+                    dict_data['首个演员'] = dict_data['全部演员'] = '有码演员'
+                # 处理影片的标题过长
+                dict_data['完整标题'] = title_only
+                if len(title_only) > settings.int_title_len:
+                    dict_data['标题'] = title_only[:settings.int_title_len]
+                else:
+                    dict_data['标题'] = title_only
                 # 特点
-                genres = re.findall(r'genre.+?">(.+?)</a>', html_web)
-                genres = [i for i in genres if i != '标签' and i != '標籤' and i != '素人']  # 这些特征 没有参考意义，为用户删去
+                gen = re.search(r'影片類別：</b><br>(.+?)</div>', html_web).group(1)
+                genres = re.findall(r'>(.+?)</a>', gen)
+                print(','.join(genres))
                 if bool_subtitle:  # 有“中字“，加上特征”中文字幕”
                     genres.append('中文字幕')
-                if bool_divulge:  # 是流出无码片，加上特征'无码流出'
-                    genres.append('无码流出')
+                try:
+                    genres = [dict_genre[i] for i in genres if dict_genre[i] != '删除']
+                except KeyError as error:
+                    num_fail += 1
+                    record_fail('    >第' + str(num_fail) + '个失败！发现新的特征需要添加至【特征对照表】：' + str(error) + '\n')
+                    continue
                 # print(genres)
-                # 评分
-                scoreg = re.search(r'平均評価</b>: (\d\.\d)<br>', html_web)
-                if str(scoreg) != 'None':
-                    float_score = float(scoreg.group(1))
-                    float_score = (float_score - 2) * 10 / 3
-                    if float_score >= 0:
-                        score = '%.1f' % float_score
+                # arzon的简介 #########################################################发现新的特征需要添加至
+                # 去arzon找简介
+                if settings.bool_nfo and settings.bool_plot and jav.episode == 1:
+                    plot, status_arzon, acook = find_plot_arzon(car, cookie_arzon, proxy_arzon)
+                    if status_arzon == 0:
+                        pass
+                    elif status_arzon == 1:
+                        num_warn += 1
+                        record_warn('    >第' + str(num_warn) + '个失败！找不到简介，尽管arzon上有搜索结果：' + path_relative + '\n')
                     else:
-                        score = '0'
-                else:
-                    scoreg = re.search(r'img/(\d\d)\.gif', html_web)
-                    if str(scoreg) != 'None':
-                        float_score = float(scoreg.group(1)) / 10
-                        float_score = (float_score - 2) * 10 / 3
-                        if float_score >= 0:
-                            score = '%.1f' % float_score
-                        else:
-                            score = '0'
-                    else:
-                        score = '0'
-                dict_data['评分'] = score
-                # 烂番茄评分 用上面的评分*10
-                criticrating = str(float(score) * 10)
-                #######################################################################
-                # 简介
-                if settings.bool_nfo:
-                    plotg = re.search(r'md-12">([^<].+?)</div>', html_web)
-                    if str(plotg) != 'None':
-                        plot = plotg.group(1)
-                    else:
-                        plot = ''
-                    plot = title_only + plot
+                        num_warn += 1
+                        record_warn('    >第' + str(num_warn) + '个失败！找不到简介，影片被arzon下架：' + path_relative + '\n')
+                    # 需要翻译简介
                     if settings.bool_tran:
                         plot = translate(tran_id, tran_sk, plot, to_language)
                         if plot.startswith('【百度'):
                             num_fail += 1
                             record_fail('    >第' + str(num_fail) + '个失败！翻译简介失败：' + path_relative + '\n')
+                    # 去除xml文档不允许的特殊字符 &<>  \/:*?"<>|
                     plot = replace_xml(plot)
+                    # print(plot)
                 else:
                     plot = ''
-                # print(plot)
+                #######################################################################
                 #######################################################################
                 dict_data['视频'] = dict_data['原文件名'] = jav.name_no_ext  # dict_data['视频']，先定义为原文件名，即将发生变化。
                 dict_data['原文件夹名'] = jav.folder
@@ -445,10 +433,9 @@ while input_start_key == '':
                             "  <plot>" + plot + "</plot>\n"
                             "  <title>" + title_in_nfo + "</title>\n"
                             "  <originaltitle>" + title + "</originaltitle>\n"
-                            "  <rating>" + score + "</rating>\n"
-                            "  <criticrating>" + criticrating + "</criticrating>\n"
+                            "  <director>" + dict_data['导演'] + "</director>\n"
                             "  <year>" + dict_data['发行年份'] + "</year>\n"
-                            "  <mpaa>NC-17</mpaa>\n"
+                            "  <mpaa>NC-17</mpaa>\n"                            
                             "  <customrating>NC-17</customrating>\n"
                             "  <countrycode>JP</countrycode>\n"
                             "  <premiered>" + time_premiered + "</premiered>\n"
@@ -457,11 +444,14 @@ while input_start_key == '':
                             "  <country>日本</country>\n"
                             "  <studio>" + studio + "</studio>\n"
                             "  <id>" + car + "</id>\n"
-                            "  <num>" + car + "</num>\n")
+                            "  <num>" + car + "</num>\n"
+                            "  <set>" + series + "</set>\n")  # emby不管set系列，kodi可以)
                     # 需要将特征写入genre
                     if settings.bool_genre:
                         for i in genres:
                             f.write("  <genre>" + i + "</genre>\n")
+                        if settings.bool_write_series and series:
+                            f.write("  <genre>系列:" + series + "</genre>\n")
                         if settings.bool_write_studio and studio:
                             f.write("  <genre>片商:" + studio + "</genre>\n")
                         if list_extra_genres:
@@ -471,22 +461,22 @@ while input_start_key == '':
                     if settings.bool_tag:
                         for i in genres:
                             f.write("  <tag>" + i + "</tag>\n")
+                        if settings.bool_write_series and series:
+                            f.write("  <tag>系列:" + series + "</tag>\n")
                         if settings.bool_write_studio and studio:
                             f.write("  <tag>片商:" + studio + "</tag>\n")
                         if list_extra_genres:
                             for i in list_extra_genres:
                                 f.write("  <tag>" + dict_data[i] + "</tag>\n")
                     # 写入演员
-                    f.write(
-                        "  <actor>\n    <name>" + dict_data['首个演员'] + "</name>\n    <type>Actor</type>\n  </actor>\n")
+                    for i in actors:
+                        f.write("  <actor>\n    <name>" + i + "</name>\n    <type>Actor</type>\n  </actor>\n")
                     f.write("</movie>\n")
                     f.close()
                     print('    >nfo收集完成')
 
                 # 5需要两张封面图片【独特】
                 if settings.bool_jpg:
-                    # 下载海报的地址 cover
-                    # fanart和poster路径
                     path_fanart = jav.root + sep
                     path_poster = jav.root + sep
                     for i in list_name_fanart:
@@ -512,45 +502,33 @@ while input_start_key == '':
                         pass
                     else:
                         # 下载封面
-                        print('    >从jav321下载封面：', url_cover)
+                        print('    >从javdb下载封面：', url_cover)
                         try:
-                            download_pic(url_cover, path_fanart, proxy_321)
+                            download_pic(url_cover, path_fanart, proxy_db)
                             print('    >fanart.jpg下载成功')
                         except:
                             num_fail += 1
                             record_fail('    >第' + str(
                                 num_fail) + '个失败！下载fanart.jpg失败：' + url_cover + '，' + path_relative + '\n')
                             continue  # 退出对该jav的整理
-                    # 下载海报
+                    # 裁剪生成 poster
                     if check_picture(path_poster):
                         # print('    >已有poster.jpg')
                         pass
-                    elif url_cover == url_poster:  # 有些素人片，没有fanart和poster之分，只有一张接近正方形的图片
-                        # 裁剪生成 poster
-                        crop_poster_default(path_fanart, path_poster, 2)
+                    else:
+                        crop_poster_youma(path_fanart, path_poster)
                         # 需要加上条纹
                         if settings.bool_watermark_subtitle and bool_subtitle:
                             add_watermark_subtitle(path_poster)
                         if settings.bool_watermark_divulge and bool_divulge:
                             add_watermark_divulge(path_poster)
-                    else:
-                        # 下载poster.jpg
-                        print('    >从jav321下载poster：', url_poster)
-                        try:
-                            download_pic(url_poster, path_poster, proxy_321)
-                            print('    >poster.jpg下载成功')
-                            # 需要加上条纹
-                            if settings.bool_watermark_subtitle and bool_subtitle:
-                                add_watermark_subtitle(path_poster)
-                            if settings.bool_watermark_divulge and bool_divulge:
-                                add_watermark_divulge(path_poster)
-                        except:
-                            num_fail += 1
-                            record_fail(
-                                '    >第' + str(num_fail) + '个失败！poster下载失败：' + url_poster + '，' + path_relative + '\n')
-                            continue
 
                 # 6收集演员头像【相同】
+                if settings.bool_sculpture and jav.episode == 1:
+                    if actors[0] == '有码演员':
+                        print('    >未知演员，无法收集头像')
+                    else:
+                        collect_sculpture(actors, jav.root)
 
                 # 7归类影片，针对文件夹【相同】
                 try:
@@ -563,9 +541,8 @@ while input_start_key == '':
 
             except:
                 num_fail += 1
-                record_fail('    >第' + str(
-                    num_fail) + '个失败！发生错误，如一直在该影片报错请截图并联系作者：' + path_relative + '\n' + format_exc() + '\n')
-                continue  # 【退出对该jav的整理】
+                record_fail('    >第' + str(num_fail) + '个失败！发生错误，如一直在该影片报错请截图并联系作者：' + path_relative + '\n' + format_exc() + '\n')
+                continue     # 【退出对该jav的整理】
 
     # 完结撒花
     print('\n当前文件夹完成，', end='')
@@ -578,7 +555,7 @@ while input_start_key == '':
             if content[line].startswith('已'):
                 break
             line -= 1
-        for i in range(line + 1, 0):
+        for i in range(line+1, 0):
             print(content[i], end='')
         print('\n“【可删除】失败记录.txt”已记录错误\n')
     else:
