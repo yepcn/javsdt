@@ -8,7 +8,7 @@ from Class.MyEnum import CompletionStatusEnum, CutTypeEnum
 
 # 每一部jav的“结构体”
 class JavFile(object):
-    def __init__(self, file_raw, dir_current, car, car_id, episode, subtitle, num_current):
+    def __init__(self, car, car_id, file_raw, dir_current, episode, subtitle, no_current):
         self.Car = car                                     # 车牌
         self.Car_id = car_id                               # 去bus和arzon搜索的车牌，不同在于Car_id是26ID-xxx，Car是ID-26xxx
         self.Pref = car.split('-')[0]                      # 车牌前缀
@@ -19,11 +19,11 @@ class JavFile(object):
         self.Sum_all_episodes = 0                          # 当前车牌总共多少集，用户的
         self.Subtitle = subtitle                           # 字幕文件名  ABC-123.srt；会在重命名过程中发生变化
         self.Ext_subtitle = splitext(subtitle)[1].lower()  # 字幕扩展名  .srt
-        self.No = num_current                              # 当前处理的视频在所有视频中的编号，整理进度
+        self.No = no_current                              # 当前处理的视频在所有视频中的编号，整理进度
         self.Bool_subtitle = False                           # 拥有字幕
         self.Bool_divulge = False                            # 是无码流出
 
-    # 类属性
+    # 类属性，类似于面向对象语言中的静态成员
     Bool_in_separate_folder = False         # 是否拥有独立文件夹
 
     # 多cd，如果有两集，第一集cd1.第二集cd2；如果只有一集，为空
@@ -77,11 +77,10 @@ class JavModel(object):
         self.Javbus = ''              # 20 bus编号
         self.Arzon = ''               # 21 arzon编号
         self.CompletionStatus = CompletionStatusEnum.unknown.value    # 22 完成度，三大网站为全部
-        self.Version = 0              # 23 版本
+        self.Version = 1              # 23 版本
         self.Genres = []              # 24 类型
         self.Actors = []              # 25 演员们
-        self.Version = 1
-        self.ModifyDate = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        self.Modify = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         self.__dict__.update(entries)
 
     def prefect_completion_status(self):

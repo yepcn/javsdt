@@ -17,7 +17,7 @@ from Functions.Web.Arzon import scrape_from_arzon
 from Functions.Utils.JsonUtility import read_json_to_dict
 
 #  main开始
-# region（1）读取配置文件
+# region（1）读取配置
 print('正在读取ini中的设置...', end='')
 try:
     handler = Handler('有码')

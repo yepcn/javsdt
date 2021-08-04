@@ -306,7 +306,7 @@ class Handler(object):
                     else:
                         car_id = car
                     # 将该jav的各种属性打包好，包括原文件名带扩展名、所在文件夹路径、第几集、所属字幕文件名
-                    jav_struct = JavFile(file_raw, self.dir_current, car, car_id, self.dict_car_episode[car], subtitle_file,
+                    jav_struct = JavFile(car, car_id, file_raw, self.dir_current, self.dict_car_episode[car], subtitle_file,
                                          self.no_current)
                     list_jav_files.append(jav_struct)
                 else:
