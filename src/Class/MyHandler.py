@@ -27,14 +27,14 @@ class Handler(object):
         config_settings.read('【点我设置整理规则】.ini', encoding='utf-8-sig')
         # ###################################################### 公式元素 ##############################################
         # 是否 去除 标题 末尾可能存在的演员姓名
-        self.bool_need_actors_end_of_title = True if config_settings.get("公式元素", "标题末尾保留演员姓名？") == '是' else False
+        self.bool_need_actors_end_of_title = config_settings.get("公式元素", "标题末尾保留演员姓名？") == '是'
         # ###################################################### nfo ##################################################
         # 是否 收集nfo
-        self.bool_nfo = True if config_settings.get("收集nfo", "是否收集nfo？") == '是' else False
+        self.bool_nfo = config_settings.get("收集nfo", "是否收集nfo？") == '是'
         # 自定义 nfo中title的公式
         self._list_name_nfo_title = config_settings.get("收集nfo", "title的公式").replace('标题', '完整标题', 1).split('+')
         # 是否 在nfo中plot写入中文简介，否则写原日语简介
-        self.bool_need_zh_plot = True if config_settings.get("收集nfo", "plot是否使用中文简介？") == '是' else False
+        self.bool_need_zh_plot = config_settings.get("收集nfo", "plot是否使用中文简介？") == '是'
         # 自定义 将系列、片商等元素作为特征，因为emby不会直接在影片介绍页面上显示片商，也不会读取系列set
         self._list_custom_genres = config_settings.get("收集nfo", "额外增加以下元素到特征中").split('、') \
             if config_settings.get("收集nfo", "额外增加以下元素到特征中") else []
@@ -45,21 +45,21 @@ class Handler(object):
         # ？是否将“片商”写入到特征中
         self._bool_write_studio = True if '片商' in self._list_custom_genres else False
         # 是否 将特征保存到风格中
-        self.bool_genre = True if config_settings.get("收集nfo", "是否将特征保存到genre？") == '是' else False
+        self.bool_genre = config_settings.get("收集nfo", "是否将特征保存到genre？") == '是'
         # 是否 将 片商 作为特征
-        self.bool_tag = True if config_settings.get("收集nfo", "是否将特征保存到tag？") == '是' else False
+        self.bool_tag = config_settings.get("收集nfo", "是否将特征保存到tag？") == '是'
         # ###################################################### 重命名 ################################################
         # 是否 重命名 视频
-        self.bool_rename_video = True if config_settings.get("重命名视频文件", "是否重命名视频文件？") == '是' else False
+        self.bool_rename_video = config_settings.get("重命名视频文件", "是否重命名视频文件？") == '是'
         # 自定义 重命名 视频
         self._list_rename_video = config_settings.get("重命名视频文件", "重命名视频文件的公式").split('+')
         # 是否 重命名视频所在文件夹，或者为它创建独立文件夹
-        self._bool_rename_folder = True if config_settings.get("修改文件夹", "是否重命名或创建独立文件夹？") == '是' else False
+        self._bool_rename_folder = config_settings.get("修改文件夹", "是否重命名或创建独立文件夹？") == '是'
         # 自定义 新的文件夹名  示例: ['车牌', '【', '全部演员', '】']
         self._list_rename_folder = config_settings.get("修改文件夹", "新文件夹的公式").split('+')
         # ######################################################### 归类 ###############################################
         # 是否 归类jav
-        self.bool_classify = True if config_settings.get("归类影片", "是否归类影片？") == '是' else False
+        self.bool_classify = config_settings.get("归类影片", "是否归类影片？") == '是'
         # 是否 针对“文件夹”归类jav，“否”即针对“文件”
         self._bool_classify_folder = True if config_settings.get("归类影片", "针对文件还是文件夹？") == '文件夹' else False
         # 自定义 路径 归类的jav放到哪
@@ -68,23 +68,23 @@ class Handler(object):
         self._custom_classify_basis = config_settings.get("归类影片", "归类的标准")
         # ####################################################### 图片 ################################################
         # 是否 下载图片
-        self._bool_jpg = True if config_settings.get("下载封面", "是否下载封面海报？") == '是' else False
+        self._bool_jpg = config_settings.get("下载封面", "是否下载封面海报？") == '是'
         # 自定义 命名 大封面fanart
         self._list_name_fanart = config_settings.get("下载封面", "fanart的公式").split('+')
         # 自定义 命名 小海报poster
         self._list_name_poster = config_settings.get("下载封面", "poster的公式").split('+')
         # 是否 如果视频有“中字”，给poster的左上角加上“中文字幕”的斜杠
-        self._bool_watermark_subtitle = True if config_settings.get("下载封面", "是否为poster加上中文字幕条幅？") == '是' else False
+        self._bool_watermark_subtitle = config_settings.get("下载封面", "是否为poster加上中文字幕条幅？") == '是'
         # 是否 如果视频是“无码流出”，给poster的右上角加上“无码流出”的斜杠
-        self._bool_watermark_divulge = True if config_settings.get("下载封面", "是否为poster加上无码流出条幅？") == '是' else False
+        self._bool_watermark_divulge = config_settings.get("下载封面", "是否为poster加上无码流出条幅？") == '是'
         # ##################################################### 字幕 ###################################################
         # 是否 重命名用户已拥有的字幕
-        self.bool_rename_subtitle = True if config_settings.get("字幕文件", "是否重命名已有的字幕文件？") == '是' else False
+        self.bool_rename_subtitle = config_settings.get("字幕文件", "是否重命名已有的字幕文件？") == '是'
         # ##################################################### kodi ##################################################
         # 是否 收集演员头像
-        self._bool_sculpture = True if config_settings.get("kodi专用", "是否收集演员头像？") == '是' else False
+        self._bool_sculpture = config_settings.get("kodi专用", "是否收集演员头像？") == '是'
         # 是否 对于多cd的影片，kodi只需要一份图片和nfo
-        self._bool_cd_only = True if config_settings.get("kodi专用", "是否对多cd只收集一份图片和nfo？") == '是' else False
+        self._bool_cd_only = config_settings.get("kodi专用", "是否对多cd只收集一份图片和nfo？") == '是'
         # ##################################################### 代理 ##################################################
         # 代理端口
         self._custom_proxy = config_settings.get("局部代理", "代理端口").strip()
@@ -144,7 +144,7 @@ class Handler(object):
         self.tran_sk = config_settings.get("百度翻译API", "密钥")
         # ####################################### 百度人体分析 ####################################################
         # 是否 需要准确定位人脸的poster
-        self.bool_face = True if config_settings.get("百度人体分析", "是否需要准确定位人脸的poster？") == '是' else False
+        self.bool_face = config_settings.get("百度人体分析", "是否需要准确定位人脸的poster？") == '是'
         # 账户 百度人体分析
         self._al_id = config_settings.get("百度人体分析", "appid")
         self._ai_ak = config_settings.get("百度人体分析", "api key")
