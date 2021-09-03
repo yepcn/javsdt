@@ -5,11 +5,11 @@ class Logger(object):
     def __init__(self):
         self.no_fail = 0  # 数量: 已经或可能导致致命错误，比如整理未完成，同车牌有不同视频
         self.no_warn = 0  # 数量: 对整理结果不致命的问题，比如找不到简介
-        self.path_relative = ''   # 当前jav_file的相对dir_choose的
+        self.path_relative = ''   # 当前jav_file的相对dir_choose的路径，用于记错
 
     def rest(self):
-        self.no_fail = 0  # 数量: 已经或可能导致致命错误，比如整理未完成，同车牌有不同视频
-        self.no_warn = 0  # 数量: 对整理结果不致命的问题，比如找不到简介
+        self.no_fail = 0
+        self.no_warn = 0
 
     # 功能: print错误信息并写入日志
     # 参数: 错误信息

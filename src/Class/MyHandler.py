@@ -1,12 +1,12 @@
 # -*- coding:utf-8 -*-
-import configparser
 import os
 import re
-from os import sep
-from configparser import RawConfigParser
+from os import sep       # 系统路径分隔符
+from configparser import RawConfigParser    # 读取ini
+from configparser import NoOptionError    # ini文件不存在或不存在指定node的错误
 from shutil import copyfile
-from xml.etree.ElementTree import parse, ParseError
-from aip import AipBodyAnalysis
+from xml.etree.ElementTree import parse, ParseError    # 解析xml格式
+from aip import AipBodyAnalysis    # 百度ai人体分析
 
 from Class.MyJav import JavFile
 from Class.MyLogger import record_video_old
@@ -27,30 +27,30 @@ class Handler(object):
         config_settings.read('【点我设置整理规则】.ini', encoding='utf-8-sig')
         # ###################################################### 公式元素 ##############################################
         # 是否 去除 标题 末尾可能存在的演员姓名
-        self.bool_need_actors_end_of_title = config_settings.get("公式元素", "标题末尾保留演员姓名？") == '是'
+        self._bool_need_actors_end_of_title = config_settings.get("公式元素", "标题末尾保留演员姓名？") == '是'
         # ###################################################### nfo ##################################################
         # 是否 收集nfo
-        self.bool_nfo = config_settings.get("收集nfo", "是否收集nfo？") == '是'
+        self._bool_nfo = config_settings.get("收集nfo", "是否收集nfo？") == '是'
         # 自定义 nfo中title的公式
-        self._list_name_nfo_title = config_settings.get("收集nfo", "title的公式").replace('标题', '完整标题', 1).split('+')
+        self._list_name_nfo_title = config_settings.get("收集nfo", "title的公式").replace('标题', '完整标题').split('+')
         # 是否 在nfo中plot写入中文简介，否则写原日语简介
-        self.bool_need_zh_plot = config_settings.get("收集nfo", "plot是否使用中文简介？") == '是'
+        self._bool_need_zh_plot = config_settings.get("收集nfo", "plot是否使用中文简介？") == '是'
         # 自定义 将系列、片商等元素作为特征，因为emby不会直接在影片介绍页面上显示片商，也不会读取系列set
-        self._list_custom_genres = config_settings.get("收集nfo", "额外增加以下元素到特征中").split('、') \
+        list_custom_genres = config_settings.get("收集nfo", "额外增加以下元素到特征中").split('、') \
             if config_settings.get("收集nfo", "额外增加以下元素到特征中") else []
         # 自定义 将系列、片商等元素作为特征，因为emby不会直接在影片介绍页面上显示片商，也不会读取系列set
-        self._list_extra_genres = [i for i in self._list_custom_genres if i != '系列' and i != '片商']
+        self._list_extra_genres = [i for i in list_custom_genres if i != '系列' and i != '片商']
         # ？是否将“系列”写入到特征中
-        self._bool_write_series = True if '系列' in self._list_custom_genres else False
+        self._bool_write_series = True if '系列' in list_custom_genres else False
         # ？是否将“片商”写入到特征中
-        self._bool_write_studio = True if '片商' in self._list_custom_genres else False
+        self._bool_write_studio = True if '片商' in list_custom_genres else False
         # 是否 将特征保存到风格中
-        self.bool_genre = config_settings.get("收集nfo", "是否将特征保存到genre？") == '是'
+        self._bool_genre = config_settings.get("收集nfo", "是否将特征保存到genre？") == '是'
         # 是否 将 片商 作为特征
-        self.bool_tag = config_settings.get("收集nfo", "是否将特征保存到tag？") == '是'
+        self._bool_tag = config_settings.get("收集nfo", "是否将特征保存到tag？") == '是'
         # ###################################################### 重命名 ################################################
         # 是否 重命名 视频
-        self.bool_rename_video = config_settings.get("重命名视频文件", "是否重命名视频文件？") == '是'
+        self._bool_rename_video = config_settings.get("重命名视频文件", "是否重命名视频文件？") == '是'
         # 自定义 重命名 视频
         self._list_rename_video = config_settings.get("重命名视频文件", "重命名视频文件的公式").split('+')
         # 是否 重命名视频所在文件夹，或者为它创建独立文件夹
@@ -59,9 +59,9 @@ class Handler(object):
         self._list_rename_folder = config_settings.get("修改文件夹", "新文件夹的公式").split('+')
         # ######################################################### 归类 ###############################################
         # 是否 归类jav
-        self.bool_classify = config_settings.get("归类影片", "是否归类影片？") == '是'
+        self._bool_classify = config_settings.get("归类影片", "是否归类影片？") == '是'
         # 是否 针对“文件夹”归类jav，“否”即针对“文件”
-        self._bool_classify_folder = True if config_settings.get("归类影片", "针对文件还是文件夹？") == '文件夹' else False
+        self._bool_classify_folder = config_settings.get("归类影片", "针对文件还是文件夹？") == '文件夹'
         # 自定义 路径 归类的jav放到哪
         self._custom_classify_target_dir = config_settings.get("归类影片", "归类的根目录")
         # 自定义 jav按什么类别标准来归类 比如: 影片类型\全部演员
@@ -79,7 +79,7 @@ class Handler(object):
         self._bool_watermark_divulge = config_settings.get("下载封面", "是否为poster加上无码流出条幅？") == '是'
         # ##################################################### 字幕 ###################################################
         # 是否 重命名用户已拥有的字幕
-        self.bool_rename_subtitle = config_settings.get("字幕文件", "是否重命名已有的字幕文件？") == '是'
+        self._bool_rename_subtitle = config_settings.get("字幕文件", "是否重命名已有的字幕文件？") == '是'
         # ##################################################### kodi ##################################################
         # 是否 收集演员头像
         self._bool_sculpture = config_settings.get("kodi专用", "是否收集演员头像？") == '是'
@@ -87,26 +87,26 @@ class Handler(object):
         self._bool_cd_only = config_settings.get("kodi专用", "是否对多cd只收集一份图片和nfo？") == '是'
         # ##################################################### 代理 ##################################################
         # 代理端口
-        self._custom_proxy = config_settings.get("局部代理", "代理端口").strip()
+        custom_proxy = config_settings.get("局部代理", "代理端口").strip()
         # 代理，如果为空则效果为不使用
-        self._proxys = {'http': f'http://{self._custom_proxy}', 'https': f'https://{self._custom_proxy}'} \
+        proxys = {'http': f'http://{custom_proxy}', 'https': f'https://{custom_proxy}'} \
             if config_settings.get("局部代理", "http还是socks5？") == '是' \
-            else {'http': f'socks5://{self._custom_proxy}', 'https': f'socks5://{self._custom_proxy}'}
+            else {'http': f'socks5://{custom_proxy}', 'https': f'socks5://{custom_proxy}'}
         # 是否 使用局部代理
-        self._bool_proxy = True if config_settings.get("局部代理", "是否使用局部代理？") == '是' and self._custom_proxy else False
+        self._bool_proxy = config_settings.get("局部代理", "是否使用局部代理？") == '是' and custom_proxy
         # 是否 代理javlibrary
-        self.proxy_library = self._proxys if config_settings.get("局部代理", "是否代理javlibrary？") == '是' \
+        self.proxy_library = proxys if config_settings.get("局部代理", "是否代理javlibrary？") == '是' \
                                              and self._bool_proxy else {}
         # 是否 代理javbus，还有代理javbus上的图片cdnbus
-        self.proxy_bus = self._proxys if config_settings.get("局部代理", "是否代理javbus？") == '是' and self._bool_proxy else {}
+        self.proxy_bus = proxys if config_settings.get("局部代理", "是否代理javbus？") == '是' and self._bool_proxy else {}
         # 是否 代理javbus，还有代理javbus上的图片cdnbus
-        self.proxy_321 = self._proxys if config_settings.get("局部代理", "是否代理jav321？") == '是' and self._bool_proxy else {}
+        self.proxy_321 = proxys if config_settings.get("局部代理", "是否代理jav321？") == '是' and self._bool_proxy else {}
         # 是否 代理javdb，还有代理javdb上的图片
-        self.proxy_db = self._proxys if config_settings.get("局部代理", "是否代理javdb？") == '是' and self._bool_proxy else {}
+        self.proxy_db = proxys if config_settings.get("局部代理", "是否代理javdb？") == '是' and self._bool_proxy else {}
         # 是否 代理arzon
-        self.proxy_arzon = self._proxys if config_settings.get("局部代理", "是否代理arzon？") == '是' and self._bool_proxy else {}
+        self.proxy_arzon = proxys if config_settings.get("局部代理", "是否代理arzon？") == '是' and self._bool_proxy else {}
         # 是否 代理dmm图片，javlibrary和javdb上的有码图片几乎都是直接引用dmm
-        self.proxy_dmm = self._proxys if config_settings.get("局部代理", "是否代理dmm图片？") == '是' and self._bool_proxy else {}
+        self.proxy_dmm = proxys if config_settings.get("局部代理", "是否代理dmm图片？") == '是' and self._bool_proxy else {}
         # ################################################### 原影片文件的性质 ##########################################
         # 自定义 无视的字母数字 去除影响搜索结果的字母数字 xhd1080、mm616、FHD-1080
         self._list_surplus_words_in_filename = config_settings.get("原影片文件的性质", "有码素人无视多余的字母数字").upper().split('、') \
@@ -115,11 +115,11 @@ class Handler(object):
         # 自定义 原影片性质 影片有中文，体现在视频名称中包含这些字符
         self._list_subtitle_words_in_filename = config_settings.get("原影片文件的性质", "是否中字即文件名包含").strip().split('、')
         # 自定义 是否中字 这个元素的表现形式
-        self.custom_subtitle_expression = config_settings.get("原影片文件的性质", "是否中字的表现形式")
+        self._custom_subtitle_expression = config_settings.get("原影片文件的性质", "是否中字的表现形式")
         # 自定义 原影片性质 影片是无码流出片，体现在视频名称中包含这些字符
         self._list_divulge_words_in_filename = config_settings.get("原影片文件的性质", "是否流出即文件名包含").strip().split('、')
         # 自定义 是否流出 这个元素的表现形式
-        self.custom_divulge_expression = config_settings.get("原影片文件的性质", "是否流出的表现形式")
+        self._custom_divulge_expression = config_settings.get("原影片文件的性质", "是否流出的表现形式")
         # 自定义 原影片性质 有码
         self._av_type = config_settings.get("原影片文件的性质", self._pattern)
         # ################################################## 其他设置 ##################################################
@@ -200,7 +200,7 @@ class Handler(object):
     # #########################[修改文件夹]##############################
     # 是否需要重命名文件夹或者创建新的文件夹
     def judge_need_rename_folder(self):
-        if self.bool_classify:  # 如果需要归类
+        if self._bool_classify:  # 如果需要归类
             if self._bool_classify_folder:  # 并且是针对文件夹
                 return True  # 那么必须重命名文件夹或者创建新的文件夹
         else:  # 不需要归类
@@ -216,7 +216,7 @@ class Handler(object):
     # 辅助: os.sep，os.system
     def check_classify_target_directory(self):
         # 检查 归类根目录 的合法性
-        if self.bool_classify:
+        if self._bool_classify:
             custom_classify_target_dir = self._custom_classify_target_dir.rstrip(sep)
             # 用户使用默认的“所选文件夹”
             if custom_classify_target_dir == '所选文件夹':
@@ -486,7 +486,7 @@ class Handler(object):
     def prefect_dict_for_standard(self, jav_file, jav_model):
         # 标题
         str_actors = ' '.join(jav_model.Actors[:3])
-        int_actors_len = len(str_actors) if self.bool_need_actors_end_of_title else 0
+        int_actors_len = len(str_actors) if self._bool_need_actors_end_of_title else 0
         int_current_len = self._int_title_len - int_actors_len
         self.dict_for_standard['完整标题'] = replace_xml_win(jav_model.Title)
         self.dict_for_standard['中文完整标题'] = replace_xml_win(jav_model.TitleZh) \
@@ -500,15 +500,15 @@ class Handler(object):
             self.dict_for_standard['中文标题'] = self.dict_for_standard['中文完整标题'][:int_current_len]
         else:
             self.dict_for_standard['中文标题'] = self.dict_for_standard['中文完整标题']
-        if self.bool_need_actors_end_of_title:
+        if self._bool_need_actors_end_of_title:
             self.dict_for_standard['标题'] = f'{self.dict_for_standard["标题"]} {str_actors}'
             self.dict_for_standard['完整标题'] += f'{self.dict_for_standard["完整标题"]} {str_actors}'
             self.dict_for_standard['中文标题'] += f'{self.dict_for_standard["中文标题"]} {str_actors}'
             self.dict_for_standard['中文完整标题'] += f'{self.dict_for_standard["中文完整标题"]} {str_actors}'
 
         # '是否中字'这一命名元素被激活
-        self.dict_for_standard['是否中字'] = self.custom_subtitle_expression if jav_file.Bool_subtitle else ''
-        self.dict_for_standard['是否流出'] = self.custom_divulge_expression if jav_file.Bool_divulge else ''
+        self.dict_for_standard['是否中字'] = self._custom_subtitle_expression if jav_file.Bool_subtitle else ''
+        self.dict_for_standard['是否流出'] = self._custom_divulge_expression if jav_file.Bool_divulge else ''
         # 车牌
         self.dict_for_standard['车牌'] = jav_model.Car  # car可能发生了变化
         self.dict_for_standard['车牌前缀'] = jav_model.Car.split('-')[0]
@@ -547,7 +547,7 @@ class Handler(object):
     def rename_mp4(self, jav_file):
         # 如果重命名操作不成功，将path_new赋值给path_return，提醒用户自行重命名
         path_return = ''
-        if self.bool_rename_video:
+        if self._bool_rename_video:
             # 构造新文件名，不带文件类型后缀
             name_without_ext = ''
             for j in self._list_rename_video:
@@ -573,7 +573,7 @@ class Handler(object):
             jav_file.Name = f'{name_without_ext}{jav_file.Ext}'  # 【更新】jav.name，重命名操作可能不成功，但之后的操作仍然围绕成功的jav.name来命名
             print(f'    >修改文件名{jav_file.Cd}完成')
             # 重命名字幕
-            if jav_file.Subtitle and self.bool_rename_subtitle:
+            if jav_file.Subtitle and self._bool_rename_subtitle:
                 subtitle_new = f'{name_without_ext}{jav_file.Ext_subtitle}'  # 【临时变量】subtitle_new
                 path_subtitle_new = f'{jav_file.Dir}{sep}{subtitle_new}'  # 【临时变量】path_subtitle_new
                 if jav_file.Path_subtitle != path_subtitle_new:
@@ -588,7 +588,7 @@ class Handler(object):
     # 辅助: os.exists, os.rename, os.makedirs，
     def classify_files(self, jav_file):
         # 如果需要归类，且不是针对文件夹来归类
-        if self.bool_classify and not self._bool_classify_folder:
+        if self._bool_classify and not self._bool_classify_folder:
             # 移动的目标文件夹路径
             dir_dest = f'{self.dir_classify_target}{sep}'
             for j in self.list_classify_basis:
@@ -682,7 +682,7 @@ class Handler(object):
                         try:
                             each_actor_times = config_actor.get('缺失的演员头像', each_actor)
                             config_actor.set("缺失的演员头像", each_actor, str(int(each_actor_times) + 1))
-                        except configparser.NoOptionError:
+                        except NoOptionError:
                             config_actor.set("缺失的演员头像", each_actor, '1')
                         config_actor.write(open('【缺失的演员头像统计For Kodi】.ini', "w", encoding='utf-8-sig'))
                         continue
@@ -700,7 +700,7 @@ class Handler(object):
     # 辅助: os.exists, os.rename, os.makedirs，
     def classify_folder(self, jav_file):
         # 需要移动文件夹，且，是该影片的最后一集
-        if self.bool_classify and self._bool_classify_folder and jav_file.Episode == jav_file.Sum_all_episodes:
+        if self._bool_classify and self._bool_classify_folder and jav_file.Episode == jav_file.Sum_all_episodes:
             # 用户选择的文件夹是一部影片的独立文件夹，为了避免在这个文件夹里又生成新的归类文件夹
             if jav_file.Bool_in_separate_folder and self.dir_classify_target.startswith(jav_file.Dir):
                 raise TooManyDirectoryLevelsError(f'无法归类，不建议在当前文件夹内再新建文件夹')
@@ -732,7 +732,7 @@ class Handler(object):
     # 返回: 素人车牌list
     # 辅助: 无
     def write_nfo(self, jav_file, jav_model, genres):
-        if self.bool_nfo:
+        if self._bool_nfo:
             # 如果是为kodi准备的nfo，不需要多cd
             if self._bool_cd_only:
                 path_nfo = f'{jav_file.Dir}{sep}{jav_file.Name_no_ext.replace(jav_file.Cd, "")}.nfo'
@@ -743,7 +743,7 @@ class Handler(object):
             for i in self._list_name_nfo_title:
                 title_in_nfo = f'{title_in_nfo}{self.dict_for_standard[i]}'  # nfo中tilte的写法
             # 开始写入nfo，这nfo格式是参考的kodi的nfo
-            plot = replace_xml(jav_model.PlotZh) if self.bool_need_zh_plot else replace_xml(jav_model.Plot)
+            plot = replace_xml(jav_model.PlotZh) if self._bool_need_zh_plot else replace_xml(jav_model.Plot)
             f = open(path_nfo, 'w', encoding="utf-8")
             f.write(f'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n'
                     f'<movie>\n'
@@ -766,7 +766,7 @@ class Handler(object):
                     f'  <num>{jav_model.Car}</num>\n'
                     f'  <set>{replace_xml(jav_model.Series)}</set>\n')  # emby不管set系列，kodi可以
             # 需要将特征写入genre
-            if self.bool_genre:
+            if self._bool_genre:
                 for i in genres:
                     f.write(f'  <genre>{i}</genre>\n')
                 if self._bool_write_series and jav_model.Series:
@@ -776,7 +776,7 @@ class Handler(object):
                 for i in self._list_extra_genres:
                     f.write(f'  <genre>{self.dict_for_standard[i]}</genre>\n')
             # 需要将特征写入tag
-            if self.bool_tag:
+            if self._bool_tag:
                 for i in genres:
                     f.write(f'  <tag>{i}</tag>\n')
                 if self._bool_write_series and jav_model.Series:

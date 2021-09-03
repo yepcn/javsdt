@@ -98,14 +98,13 @@ while not input_key:
                 dir_prefs_jsons = f'{dir_pwd_father}{sep}【重要须备份】已整理的jsons{sep}{jav_file.Pref}{sep}'
                 path_json = f'{dir_prefs_jsons}{jav_file.Car}.json'
                 if os.path.exists(path_json):
+                    print(f'    >从本地json读取元数据: {path_json}')
                     jav_model = JavModel(**read_json_to_dict(path_json))
                     genres = jav_model.Genres
-                    print(f'    >从本地json读取元数据: {path_json}')
                 else:
                     jav_model = JavModel()
                     # region（3.2.2.2）从javdb获取信息
                     status, genres_db = scrape_from_db(jav_file, jav_model, handler.url_db, handler.proxy_db)
-                    temp = status == ScrapeStatusEnum.db_not_found
                     if status == ScrapeStatusEnum.db_not_found:
                         logger.record_warn(f'javdb找不到该车牌的信息: {jav_file.Car}，')
                     # 优化genres_db
@@ -127,7 +126,7 @@ while not input_key:
                         logger.record_fail(f'Javdb和Javlibrary都找不到该车牌信息: {jav_file.Car}，')
                         continue  # 结束对该jav的整理
 
-                    # region（3.2.2.4）前往javbus查找【封面】【系列】【特征】
+                    # region（3.2.2.4）前往javbus查找【封面】【系列】【特征】.py
                     status, genres_bus = scrape_from_bus(jav_file, jav_model, handler.url_bus, handler.proxy_bus)
                     if status == ScrapeStatusEnum.bus_multiple_search_results:
                         logger.record_warn(f'部分信息可能错误，javbus搜索到同车牌的不同视频: {jav_file.Car_id}，')
@@ -154,8 +153,9 @@ while not input_key:
                     # 整合genres
                     genres = list(set(genres_db + genres_library + genres_bus))
                     jav_model.Genres = [genre for genre in genres]
+                    # 我之前错误的写法是 jav_model.Genres = genres，导致genres发生改变后，jav_model.Genres也发生了变化
 
-                    # 完善jav_file
+                # 完善jav_file
                 handler.judge_subtitle_and_divulge(jav_file)
                 # 完善写入nfo中的genres
                 if jav_file.Bool_subtitle:  # 有“中字“，加上特征”中文字幕”
@@ -171,9 +171,9 @@ while not input_key:
                 # endregion
 
                 ################################################################################
-                if not os.path.exists(dir_prefs_jsons):
-                    os.makedirs(dir_prefs_jsons)
                 if not os.path.exists(path_json):
+                    if not os.path.exists(dir_prefs_jsons):
+                        os.makedirs(dir_prefs_jsons)
                     with open(path_json, 'w', encoding='utf-8') as f:
                         json.dump(jav_model.__dict__, f, indent=4)
                     print(f'    >保存本地json成功: {path_json}')
