@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 import os
 import re
+import time
 from os import sep       # 系统路径分隔符
 from configparser import RawConfigParser    # 读取ini
 from configparser import NoOptionError    # ini文件不存在或不存在指定node的错误
@@ -477,6 +478,7 @@ class Handler(object):
             jav_model.Title = jav_model.Title[:-len(str_actors)].strip()
         # 翻译出中文标题和简介
         jav_model.TitleZh = translate(self.tran_id, self.tran_sk, jav_model.Title, self.to_language)
+        time.sleep(0.9)
         jav_model.PlotZh = translate(self.tran_id, self.tran_sk, jav_model.Plot, self.to_language)
 
     # 功能: 用jav_file、jav_model中的原始数据完善dict_for_standard
@@ -810,10 +812,14 @@ class Handler(object):
                 path_poster = path_poster.replace(jav_file.Cd, '')
             # emby需要多份，现在不是第一集，直接复制第一集的图片
             elif jav_file.Episode != 1:
-                copyfile(path_fanart.replace(jav_file.Cd, '-cd1'), path_fanart)
-                print('    >fanart.jpg复制成功')
-                copyfile(path_poster.replace(jav_file.Cd, '-cd1'), path_poster)
-                print('    >poster.jpg复制成功')
+                # 如果用户不重名视频，并且用户的原视频是第二集，没有带cd2，例如abc-123.mkv和abc-123.mp4，
+                # 会导致fanart路径和cd1相同，引发报错raise SameFileError("{!r} and {!r} are the same file".format(src, dst))
+                # 所以这里判断下path_fanart有没有
+                if not os.path.exists(path_fanart):
+                    copyfile(path_fanart.replace(jav_file.Cd, '-cd1'), path_fanart)
+                    print('    >fanart.jpg复制成功')
+                    copyfile(path_poster.replace(jav_file.Cd, '-cd1'), path_poster)
+                    print('    >poster.jpg复制成功')
             # kodi或者emby需要的第一份图片
             if check_picture(path_fanart):
                 # 这里有个遗留问题，如果已有的图片文件名是小写，比如abc-123 xx.jpg，现在path_fanart是大写ABC-123，无法改变，poster同理

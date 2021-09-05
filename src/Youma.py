@@ -119,7 +119,10 @@ while not input_key:
                     elif status == ScrapeStatusEnum.library_multiple_search_results:
                         logger.record_warn(f'javlibrary搜索到同车牌的不同视频: {jav_file.Car}，')
                     # 优化genres_library
-                    genres_library = [dict_library_genres[i] for i in genres_library if dict_library_genres[i] != '删除']
+                    genres_library = [dict_library_genres[i] for i in genres_library
+                                      if not i.startswith('AV OP')
+                                      and not i.startswith('AVOP')
+                                      and dict_library_genres[i] != '删除']
                     # endregion
 
                     if not jav_model.Javdb and not jav_model.Javlibrary:
@@ -135,8 +138,8 @@ while not input_key:
                     # 优化genres_bus
                     genres_bus = [dict_bus_genres[i] for i in genres_bus
                                   if not i.startswith('AV OP')
-                                  or not i.startswith('AVOP')
-                                  or dict_bus_genres[i] != '删除']
+                                  and not i.startswith('AVOP')
+                                  and dict_bus_genres[i] != '删除']
                     # endregion
 
                     # region（3.2.2.5）arzon找简介
