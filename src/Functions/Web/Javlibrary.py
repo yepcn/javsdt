@@ -114,6 +114,8 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
             if list_reviews:
                 review = f'{review}//{list_reviews[-1]}//'
         review = review.replace('\n', '').replace('\t', '').replace('\r', '').strip()
+    if review:
+        review = f'//{review}'
     jav_model.Review = review
     # print(review)
     # 有大部分信息的html_jav_library
@@ -149,8 +151,9 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
         publisherg = re.search(r'rel="tag">(.+?)</a> &nbsp;<span id="label_', html_jav_library)
         jav_model.Publisher = publisherg.group(1) if publisherg else ''
     # 演员们
-    if not jav_model.Actors:
-        jav_model.Actors = re.findall(r'star\.php.+?>(.+?)<', html_jav_library)
+    actors = re.findall(r'star\.php.+?>(.+?)<', html_jav_library)
+    if actors:
+        jav_model.Actors = actors
     # 评分
     if jav_model.Score == 0:
         scoreg = re.search(r'score">\((.+?)\)<', html_jav_library)
