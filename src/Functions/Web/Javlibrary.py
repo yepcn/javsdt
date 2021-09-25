@@ -154,6 +154,10 @@ def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
     actors = re.findall(r'star\.php.+?>(.+?)<', html_jav_library)
     if actors:
         jav_model.Actors = actors
+        # 去除末尾的标题 javdb上的演员不像javlibrary使用演员最熟知的名字
+        str_actors = ' '.join(jav_model.Actors)
+        if str_actors and jav_model.Title.endswith(str_actors):
+            jav_model.Title = jav_model.Title[:-len(str_actors)].strip()
     # 评分
     if jav_model.Score == 0:
         scoreg = re.search(r'score">\((.+?)\)<', html_jav_library)

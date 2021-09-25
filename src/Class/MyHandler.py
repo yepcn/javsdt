@@ -320,11 +320,13 @@ class Handler(object):
     # 辅助：os.walk
     def count_num_videos(self):
         num_videos = 0
+        len_choose = len(self.dir_choose)
         for root, dirs, files in os.walk(self.dir_choose):
-            for file_raw in files:
-                file_temp = file_raw.upper()
-                if file_temp.endswith(self._tuple_video_types) and not file_temp.startswith('.'):
-                    num_videos += 1
+            if '归类完成' not in root[len_choose:]:
+                for file_raw in files:
+                    file_temp = file_raw.upper()
+                    if file_temp.endswith(self._tuple_video_types) and not file_temp.startswith('.'):
+                        num_videos += 1
         return num_videos
 
     # 功能: 处理多视频文件的问题，（1）所选文件夹总共有多少个视频文件，包括非jav文件，主要用于显示进度（2）同一车牌有多少cd，用于cd2...命名
@@ -471,15 +473,15 @@ class Handler(object):
     # 参数: jav_file 处理的jav视频文件对象，jav_model 保存jav元数据的对象
     # 返回: 无；更新dict_for_standard
     # 辅助: replace_xml_win，replace_xml_win
-    def prefect_jav_model(self, jav_model):
-        # 删去 标题末尾 可能存在的 演员姓名
-        str_actors = ' '.join(jav_model.Actors)
-        if str_actors and jav_model.Title.endswith(str_actors):
-            jav_model.Title = jav_model.Title[:-len(str_actors)].strip()
+    def prefect_zh(self, jav_model):
         # 翻译出中文标题和简介
-        jav_model.TitleZh = translate(self.tran_id, self.tran_sk, jav_model.Title, self.to_language)
-        time.sleep(0.9)
-        jav_model.PlotZh = translate(self.tran_id, self.tran_sk, jav_model.Plot, self.to_language)
+        if self.tran_id and self.tran_sk and not jav_model.TitleZh:
+            jav_model.TitleZh = translate(self.tran_id, self.tran_sk, jav_model.Title, self.to_language)
+            time.sleep(0.9)
+            jav_model.PlotZh = translate(self.tran_id, self.tran_sk, jav_model.Plot, self.to_language)
+            return True
+        else:
+            return False
 
     # 功能: 用jav_file、jav_model中的原始数据完善dict_for_standard
     # 参数: jav_file 处理的jav视频文件对象，jav_model 保存jav元数据的对象

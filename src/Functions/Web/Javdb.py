@@ -89,10 +89,14 @@ def scrape_from_db(jav_file, jav_model, url_db, proxy_db):
                 suf_max_n = int(extract_number_from_car(list_cars[0]))
             # 预估的页面已经超出范围，比如实际只有10页，预估到12页。
             else:
+                # 防止预估的no_page太大，比如HODV-21301
+                if no_page > 100:
+                    no_page = 100
                 # 往前推,直至找到最后有数据的那一页
                 while True:
                     no_page -= 1
                     url_page = f'{url_db}/video_codes/{pref_current}?page={no_page}'
+                    # print(url_page)
                     html_pref = get_db_html(url_page, proxy_db)
                     list_cars = etree.HTML(html_pref).xpath('//*[@id="videos"]/div/div[*]/a/div[2]/text()')
                     if list_cars:
@@ -167,6 +171,10 @@ def scrape_from_db(jav_file, jav_model, url_db, proxy_db):
     # 演员们 /actors/M0xA">上川星空</a>  actors/P9mN">希美まゆ</a><strong class="symbol female
     actors = re.findall(r'actors/.+?">(.+?)</a><strong class="symbol female', html_jav_db)
     jav_model.Actors = [i.strip() for i in actors]
+    str_actors = ' '.join(jav_model.Actors)
+    # 去除末尾的标题 javdb上的演员不像javlibrary使用演员最熟知的名字
+    if str_actors and jav_model.Title.endswith(str_actors):
+        jav_model.Title = jav_model.Title[:-len(str_actors)].strip()
     # print('    >演员: ', actors)
     # 特征 /tags?c7=8">精选、综合</a>
     genres_db = re.findall(r'tags.+?">(.+?)</a>', html_jav_db)

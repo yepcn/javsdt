@@ -152,11 +152,23 @@ while not input_key:
                     elif status == ScrapeStatusEnum.interrupted:
                         logger.record_warn(f'访问arzon失败，需要重新整理该简介: {url_search_arzon}，')
                     # endregion
-                    # region（3.2.2.6）后续完善操作
+
                     # 整合genres
                     genres = list(set(genres_db + genres_library + genres_bus))
-                    jav_model.Genres = [genre for genre in genres]
                     # 我之前错误的写法是 jav_model.Genres = genres，导致genres发生改变后，jav_model.Genres也发生了变化
+                    jav_model.Genres = [genre for genre in genres]
+
+                    # 完善jav_model.CompletionStatus
+                    jav_model.prefect_completion_status()
+
+                # region（3.2.3）后续完善
+                # 如果用户 首次整理该片不存在path_json 或 如果这次整理用户正确地输入了翻译账户，则保存json
+                if os.path.exists(path_json) or handler.prefect_zh(jav_model):
+                    if not os.path.exists(dir_prefs_jsons):
+                        os.makedirs(dir_prefs_jsons)
+                    with open(path_json, 'w', encoding='utf-8') as f:
+                        json.dump(jav_model.__dict__, f, indent=4)
+                    print(f'    >保存本地json成功: {path_json}')
 
                 # 完善jav_file
                 handler.judge_subtitle_and_divulge(jav_file)
@@ -165,21 +177,10 @@ while not input_key:
                     genres.append('中文字幕')
                 if jav_file.Bool_divulge:  # 是流出无码片，加上特征'无码流出'
                     genres.append('无码流出')
-                # 完善handler.dict_for_standard
-                handler.prefect_jav_model(jav_model)
+
                 # 完善handler.dict_for_standard
                 handler.prefect_dict_for_standard(jav_file, jav_model)
-                # 完善jav_model.CompletionStatus
-                jav_model.prefect_completion_status()
                 # endregion
-
-                ################################################################################
-                if not os.path.exists(path_json):
-                    if not os.path.exists(dir_prefs_jsons):
-                        os.makedirs(dir_prefs_jsons)
-                    with open(path_json, 'w', encoding='utf-8') as f:
-                        json.dump(jav_model.__dict__, f, indent=4)
-                    print(f'    >保存本地json成功: {path_json}')
 
                 # 1重命名视频
                 path_new = handler.rename_mp4(jav_file)
