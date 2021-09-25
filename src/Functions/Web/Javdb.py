@@ -51,7 +51,7 @@ def scrape_from_db(jav_file, jav_model, url_db, proxy_db):
     if '仓库' in jav_file.Name:
         url_appointg = re.search(r'仓库(\w+?)\.', jav_file.Name)
         if url_appointg:
-            javdb = url_appointg
+            javdb = url_appointg.group(1)
             url_jav_db = f'{url_db}/v/{javdb}'
             html_jav_db = get_db_html(url_jav_db, proxy_db)
             if re.search(r'頁面未找到', html_jav_db):
