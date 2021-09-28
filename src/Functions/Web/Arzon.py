@@ -52,7 +52,7 @@ def get_arzon_html(url, cookies, proxy):
             print('    >通过局部代理失败，重新尝试...')
             continue
         except:
-            print('    >打开网页失败，重新尝试...')
+            print(f'    >打开网页失败，重新尝试...{url}')
             continue
         rqs.encoding = 'utf-8'
         rqs_content = rqs.text

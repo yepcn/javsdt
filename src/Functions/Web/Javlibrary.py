@@ -21,7 +21,7 @@ def get_library_html(url, proxy):
             continue
         except:
             # print(format_exc())
-            print('    >打开网页失败，重新尝试...')
+            print(f'    >打开网页失败，重新尝试...{url}')
             continue
         rqs.encoding = 'utf-8'
         rqs_content = rqs.text

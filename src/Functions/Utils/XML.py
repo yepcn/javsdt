@@ -20,5 +20,5 @@ def replace_xml_win(name):
     # 替换windows路径不允许的特殊字符 \/:*?"<>|
     return name.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')\
                 .replace('\n', '').replace('\t', '').replace('\r', '')\
-                .replace("\\", "#").replace("/", "#").replace(":", ": ").replace("*", "#")\
+                .replace("\\", "#").replace("/", "#").replace(":", "：").replace("*", "#")\
                 .replace("?", "？").replace("\"", "#").replace("|", "#").strip()
