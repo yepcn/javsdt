@@ -2,12 +2,12 @@
 import os
 import re
 import time
-from os import sep       # 系统路径分隔符
-from configparser import RawConfigParser    # 读取ini
-from configparser import NoOptionError    # ini文件不存在或不存在指定node的错误
+from os import sep  # 系统路径分隔符
+from configparser import RawConfigParser  # 读取ini
+from configparser import NoOptionError  # ini文件不存在或不存在指定node的错误
 from shutil import copyfile
-from xml.etree.ElementTree import parse, ParseError    # 解析xml格式
-from aip import AipBodyAnalysis    # 百度ai人体分析
+from xml.etree.ElementTree import parse, ParseError  # 解析xml格式
+from aip import AipBodyAnalysis  # 百度ai人体分析
 
 from Class.MyJav import JavFile
 from Class.MyLogger import record_video_old
@@ -97,7 +97,7 @@ class Handler(object):
         self._bool_proxy = config_settings.get("局部代理", "是否使用局部代理？") == '是' and custom_proxy
         # 是否 代理javlibrary
         self.proxy_library = proxys if config_settings.get("局部代理", "是否代理javlibrary？") == '是' \
-                                             and self._bool_proxy else {}
+                                       and self._bool_proxy else {}
         # 是否 代理javbus，还有代理javbus上的图片cdnbus
         self.proxy_bus = proxys if config_settings.get("局部代理", "是否代理javbus？") == '是' and self._bool_proxy else {}
         # 是否 代理javbus，还有代理javbus上的图片cdnbus
@@ -179,6 +179,8 @@ class Handler(object):
         self.dict_car_episode = {}
         # 当前一级文件夹包含的视频总数
         self.sum_videos_in_current_dir = 0
+        # 定义 Windows中的非法字符, 将非法字符替换为空格
+        self.winDic = str.maketrans(r':<>"\?/*', '        ')
 
     # 每次用户选择文件夹后重置
     def rest_choose_dir(self, dir_choose):
@@ -307,7 +309,8 @@ class Handler(object):
                     else:
                         car_id = car
                     # 将该jav的各种属性打包好，包括原文件名带扩展名、所在文件夹路径、第几集、所属字幕文件名
-                    jav_struct = JavFile(car, car_id, file_raw, self.dir_current, self.dict_car_episode[car], subtitle_file,
+                    jav_struct = JavFile(car, car_id, file_raw, self.dir_current, self.dict_car_episode[car],
+                                         subtitle_file,
                                          self.no_current)
                     list_jav_files.append(jav_struct)
                 else:
@@ -528,7 +531,7 @@ class Handler(object):
         self.dict_for_standard['发行商'] = replace_xml_win(jav_model.Publisher) if jav_model.Publisher else '有码发行商'
         self.dict_for_standard['制作商'] = replace_xml_win(jav_model.Studio) if jav_model.Studio else '有码制作商'
         # 评分 系列
-        self.dict_for_standard['评分'] = jav_model.Score/10
+        self.dict_for_standard['评分'] = jav_model.Score / 10
         self.dict_for_standard['系列'] = jav_model.Series if jav_model.Series else '有码系列'
         # 全部演员（最多7个） 和 第一个演员
         if jav_model.Actors:
@@ -556,8 +559,11 @@ class Handler(object):
             name_without_ext = ''
             for j in self._list_rename_video:
                 name_without_ext = f'{name_without_ext}{self.dict_for_standard[j]}'
+            if os.name == 'nt':  # 如果是windows系统
+                name_without_ext = name_without_ext.translate(self.winDic)  # 将文件名中的非法字符替换为空格
             name_without_ext = f'{name_without_ext.strip()}{jav_file.Cd}'  # 去除末尾空格，否则windows会自动删除空格，导致程序仍以为带空格
             path_new = f'{jav_file.Dir}{sep}{name_without_ext}{jav_file.Ext}'  # 【临时变量】path_new 视频文件的新路径
+
             # 一般情况，不存在同名视频文件
             if not os.path.exists(path_new):
                 os.rename(jav_file.Path, path_new)
@@ -755,7 +761,7 @@ class Handler(object):
                     f'  <title>{title_in_nfo}</title>\n'
                     f'  <originaltitle>{jav_model.Car} {replace_xml(jav_model.Title)}</originaltitle>\n'
                     f'  <director>{replace_xml(jav_model.Director)}</director>\n'
-                    f'  <rating>{jav_model.Score/10}</rating>\n'
+                    f'  <rating>{jav_model.Score / 10}</rating>\n'
                     f'  <criticrating>{jav_model.Score}</criticrating>\n'  # 烂番茄评分 用上面的评分*10
                     f'  <year>{jav_model.Release[0:4]}</year>\n'
                     f'  <mpaa>NC-17</mpaa>\n'
