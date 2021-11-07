@@ -1,7 +1,5 @@
-# -*- coding:utf-8 -*-
-import requests
 from PIL import Image
-
+import requests
 
 # 下载图片，无返回
 # 参数: 图片地址，存放路径，代理
